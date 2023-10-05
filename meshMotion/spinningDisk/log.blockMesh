@@ -1,0 +1,100 @@
+/*---------------------------------------------------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2212                                  |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+Build  : 66908158ae-20221220 OPENFOAM=2212 version=v2212
+Arch   : "LSB;label=32;scalar=64"
+Exec   : blockMesh
+Date   : Oct 05 2023
+Time   : 17:12:03
+Host   : argo
+PID    : 8156
+I/O    : uncollated
+Case   : /home/tm/Projects/research/openfoam/openfoam-smartsim/meshMotion/spinningDisk
+nProcs : 1
+trapFpe: Floating point exception trapping enabled (FOAM_SIGFPE).
+fileModificationChecking : Monitoring run-time modified files using timeStampMaster (fileModificationSkew 5, maxFileModificationPolls 20)
+allowSystemOperations : Allowing user-supplied system call operations
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+Create time
+
+--> FOAM Warning : 
+    From void* Foam::dlLibraryTable::openLibrary(const Foam::fileName&, bool)
+    in file db/dynamicLibrary/dlLibraryTable/dlLibraryTable.C at line 188
+    Could not load "libsmartSimMotionSolvers.so"
+libsmartredis.so: cannot open shared object file: No such file or directory
+Creating block mesh from "system/blockMeshDict"
+Creating block edges
+No non-planar block faces defined
+Creating topology blocks
+
+Creating topology patches - from boundary section
+
+Creating block mesh topology
+--> FOAM Warning : 
+    From Foam::polyMesh::polyMesh(const Foam::IOobject&, Foam::pointField&&, const cellShapeList&, const faceListList&, const wordList&, const Foam::PtrList<Foam::dictionary>&, const Foam::word&, const Foam::word&, bool)
+    in file meshes/polyMesh/polyMeshFromShapeMesh.C at line 919
+    Found 8 undefined faces in mesh; adding to default patch frontAndBack
+
+Check topology
+
+	Basic statistics
+		Number of internal faces : 4
+		Number of boundary faces : 16
+		Number of defined boundary faces : 16
+		Number of undefined boundary faces : 0
+	Checking patch -> block consistency
+
+Creating block offsets
+Creating merge list (topological search)...
+
+Creating polyMesh from blockMesh
+Creating patches
+Creating cells
+Creating points with scale (1 1 1)
+    Block 0 cell size :
+        i : 0.375 .. 0.375
+        j : 0.202665 .. 0.202665
+        k : 1 .. 1
+
+    Block 1 cell size :
+        i : 0.375 .. 0.375
+        j : 0.202665 .. 0.202665
+        k : 1 .. 1
+
+    Block 2 cell size :
+        i : 0.375 .. 0.375
+        j : 0.202665 .. 0.202665
+        k : 1 .. 1
+
+    Block 3 cell size :
+        i : 0.375 .. 0.375
+        j : 0.202665 .. 0.202665
+        k : 1 .. 1
+
+No patch pairs to merge
+
+Writing polyMesh with 0 cellZones
+----------------
+Mesh Information
+----------------
+  boundingBox: (-3 -3 0) (3 3 1)
+  nPoints: 2176
+  nCells: 1024
+  nFaces: 4160
+  nInternalFaces: 1984
+----------------
+Patches
+----------------
+  patch 0 (start: 1984 size: 32) name: walls
+  patch 1 (start: 2016 size: 64) name: cylinder
+  patch 2 (start: 2080 size: 16) name: outlet
+  patch 3 (start: 2096 size: 16) name: inlet
+  patch 4 (start: 2112 size: 2048) name: frontAndBack
+
+End
+
