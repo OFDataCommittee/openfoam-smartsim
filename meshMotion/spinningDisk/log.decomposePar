@@ -1,0 +1,177 @@
+/*---------------------------------------------------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2212                                  |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+Build  : 66908158ae-20221220 OPENFOAM=2212 version=v2212
+Arch   : "LSB;label=32;scalar=64"
+Exec   : decomposePar
+Date   : Oct 05 2023
+Time   : 17:12:03
+Host   : argo
+PID    : 8157
+I/O    : uncollated
+Case   : /home/tm/Projects/research/openfoam/openfoam-smartsim/meshMotion/spinningDisk
+nProcs : 1
+trapFpe: Floating point exception trapping enabled (FOAM_SIGFPE).
+fileModificationChecking : Monitoring run-time modified files using timeStampMaster (fileModificationSkew 5, maxFileModificationPolls 20)
+allowSystemOperations : Allowing user-supplied system call operations
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+Create time
+
+--> FOAM Warning : 
+    From void* Foam::dlLibraryTable::openLibrary(const Foam::fileName&, bool)
+    in file db/dynamicLibrary/dlLibraryTable/dlLibraryTable.C at line 188
+    Could not load "libsmartSimMotionSolvers.so"
+libsmartredis.so: cannot open shared object file: No such file or directory
+
+
+Decomposing mesh
+
+Create mesh
+
+Calculating distribution of cells
+Decomposition method simple [4] (region region0)
+
+Finished decomposition in 0 s
+
+Calculating original mesh data
+
+Distributing cells to processors
+
+Distributing faces to processors
+
+Distributing points to processors
+
+Constructing processor meshes
+--> FOAM Warning : 
+    From void* Foam::dlLibraryTable::openLibrary(const Foam::fileName&, bool)
+    in file db/dynamicLibrary/dlLibraryTable/dlLibraryTable.C at line 188
+    Could not load "libsmartSimMotionSolvers.so"
+libsmartredis.so: cannot open shared object file: No such file or directory
+
+Processor 0
+    Number of cells = 256
+    Number of points = 578
+    Number of faces shared with processor 1 = 16
+    Number of faces shared with processor 2 = 16
+    Number of processor patches = 2
+    Number of processor faces = 32
+    Number of boundary faces = 544
+--> FOAM Warning : 
+    From void* Foam::dlLibraryTable::openLibrary(const Foam::fileName&, bool)
+    in file db/dynamicLibrary/dlLibraryTable/dlLibraryTable.C at line 188
+    Could not load "libsmartSimMotionSolvers.so"
+libsmartredis.so: cannot open shared object file: No such file or directory
+
+Processor 1
+    Number of cells = 256
+    Number of points = 578
+    Number of faces shared with processor 0 = 16
+    Number of faces shared with processor 3 = 16
+    Number of processor patches = 2
+    Number of processor faces = 32
+    Number of boundary faces = 544
+--> FOAM Warning : 
+    From void* Foam::dlLibraryTable::openLibrary(const Foam::fileName&, bool)
+    in file db/dynamicLibrary/dlLibraryTable/dlLibraryTable.C at line 188
+    Could not load "libsmartSimMotionSolvers.so"
+libsmartredis.so: cannot open shared object file: No such file or directory
+
+Processor 2
+    Number of cells = 256
+    Number of points = 578
+    Number of faces shared with processor 0 = 16
+    Number of faces shared with processor 3 = 16
+    Number of processor patches = 2
+    Number of processor faces = 32
+    Number of boundary faces = 544
+--> FOAM Warning : 
+    From void* Foam::dlLibraryTable::openLibrary(const Foam::fileName&, bool)
+    in file db/dynamicLibrary/dlLibraryTable/dlLibraryTable.C at line 188
+    Could not load "libsmartSimMotionSolvers.so"
+libsmartredis.so: cannot open shared object file: No such file or directory
+
+Processor 3
+    Number of cells = 256
+    Number of points = 578
+    Number of faces shared with processor 1 = 16
+    Number of faces shared with processor 2 = 16
+    Number of processor patches = 2
+    Number of processor faces = 32
+    Number of boundary faces = 544
+
+Number of processor faces = 64
+Max number of cells = 256 (0% above average 256)
+Max number of processor patches = 2 (0% above average 2)
+Max number of faces between processors = 32 (0% above average 32)
+
+Time = 0
+Selecting solid-body motion function multiMotion
+Selecting solid-body motion function linearMotion
+Constructed SBMF 0 : translation of type linearMotion
+Selecting solid-body motion function rotatingMotion
+Constructed SBMF 1 : rotation of type rotatingMotion
+
+Processor 0: field transfer
+--> FOAM Warning : 
+    From void* Foam::dlLibraryTable::openLibrary(const Foam::fileName&, bool)
+    in file db/dynamicLibrary/dlLibraryTable/dlLibraryTable.C at line 188
+    Could not load "libsmartSimMotionSolvers.so"
+libsmartredis.so: cannot open shared object file: No such file or directory
+Selecting solid-body motion function linearMotion
+Constructed SBMF 0 : translation of type linearMotion
+Selecting solid-body motion function rotatingMotion
+Constructed SBMF 1 : rotation of type rotatingMotion
+Selecting solid-body motion function linearMotion
+Constructed SBMF 0 : translation of type linearMotion
+Selecting solid-body motion function rotatingMotion
+Constructed SBMF 1 : rotation of type rotatingMotion
+Processor 1: field transfer
+--> FOAM Warning : 
+    From void* Foam::dlLibraryTable::openLibrary(const Foam::fileName&, bool)
+    in file db/dynamicLibrary/dlLibraryTable/dlLibraryTable.C at line 188
+    Could not load "libsmartSimMotionSolvers.so"
+libsmartredis.so: cannot open shared object file: No such file or directory
+Selecting solid-body motion function linearMotion
+Constructed SBMF 0 : translation of type linearMotion
+Selecting solid-body motion function rotatingMotion
+Constructed SBMF 1 : rotation of type rotatingMotion
+Selecting solid-body motion function linearMotion
+Constructed SBMF 0 : translation of type linearMotion
+Selecting solid-body motion function rotatingMotion
+Constructed SBMF 1 : rotation of type rotatingMotion
+Processor 2: field transfer
+--> FOAM Warning : 
+    From void* Foam::dlLibraryTable::openLibrary(const Foam::fileName&, bool)
+    in file db/dynamicLibrary/dlLibraryTable/dlLibraryTable.C at line 188
+    Could not load "libsmartSimMotionSolvers.so"
+libsmartredis.so: cannot open shared object file: No such file or directory
+Selecting solid-body motion function linearMotion
+Constructed SBMF 0 : translation of type linearMotion
+Selecting solid-body motion function rotatingMotion
+Constructed SBMF 1 : rotation of type rotatingMotion
+Selecting solid-body motion function linearMotion
+Constructed SBMF 0 : translation of type linearMotion
+Selecting solid-body motion function rotatingMotion
+Constructed SBMF 1 : rotation of type rotatingMotion
+Processor 3: field transfer
+--> FOAM Warning : 
+    From void* Foam::dlLibraryTable::openLibrary(const Foam::fileName&, bool)
+    in file db/dynamicLibrary/dlLibraryTable/dlLibraryTable.C at line 188
+    Could not load "libsmartSimMotionSolvers.so"
+libsmartredis.so: cannot open shared object file: No such file or directory
+Selecting solid-body motion function linearMotion
+Constructed SBMF 0 : translation of type linearMotion
+Selecting solid-body motion function rotatingMotion
+Constructed SBMF 1 : rotation of type rotatingMotion
+Selecting solid-body motion function linearMotion
+Constructed SBMF 0 : translation of type linearMotion
+Selecting solid-body motion function rotatingMotion
+Constructed SBMF 1 : rotation of type rotatingMotion
+
+End
+
