@@ -1,6 +1,5 @@
 smartRedisAdapter/smartRedisAdapter.C
 smartRedisFunctionObject/smartRedisFunctionObject.C
 fieldsToSmartRedisFunctionObject/fieldsToSmartRedisFunctionObject.C
-codedSmartRedisFunctionObject/codedSmartRedisFunctionObject.C
 
 LIB = $(FOAM_USER_LIBBIN)/libSmartRedisFunctionObjects
