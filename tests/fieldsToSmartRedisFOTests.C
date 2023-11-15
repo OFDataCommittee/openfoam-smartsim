@@ -169,9 +169,8 @@ TEST_CASE("call sendAllFields on fields", "[cavity][serial][parallel]")
         surfaceSymmTensorField
     >(ds, fields);
 
-    // Is this supposed to be a blocking operation?
-    // @todo is client.put_dataset a blocking operation?
-    // @body do we have to poll for the DB 
+    // @todo is `SmartRedis::Client::put_dataset` a blocking operation?
+    // @body do we have to poll for the DB if we want to use it immediately after sending it?
     o0.client().put_dataset(ds);
 
     bool found = o0.client().poll_dataset(dsName, 10, 1000);
