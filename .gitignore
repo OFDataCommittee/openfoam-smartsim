@@ -82,6 +82,8 @@ doc/Doxygen/DTAGS
 # Ignore test cases
 **/compile_commands.json
 **/*TestDriver
+**/testDriver
+**/*wmake
 
 # Ignore XML reports
 *.xml
