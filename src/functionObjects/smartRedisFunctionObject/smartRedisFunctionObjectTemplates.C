@@ -59,9 +59,10 @@ void smartRedisFunctionObject::packFields
             size_t(NComponents<typename T::cmptType>::value)
         };
         word fNameDB = fieldName(fName, "internal");
-        // @todo Again, SmartRedis does not seem to prefer const-correctness
-        // @body Can add_tensor take a const pointer instead? we'd like to
-        //       fetch fields in const-correct manner
+        // @todo Again, SmartRedis API does not seem to prefer const-correctness
+        // @body Can add_tensor take a const pointer instead? I'd like to
+        //       fetch fields in const-correct manner, hence the following
+        //       horrible casting
         ds.add_tensor
         (
             fNameDB,
@@ -113,8 +114,8 @@ void smartRedisFunctionObject::sendList
     const word& listName
 )
 {
-    // @todo implement generic list send
-    // @body Send a list of items to SmartRedis DB
+    // @todo Implement send for generic lists
+    // @body This is supposed to be a way to send stuff outside any dataset scope 
     NotImplemented;
 }
 
@@ -125,8 +126,8 @@ void smartRedisFunctionObject::recvList
     const word& listName
 )
 {
-    // @todo implement generic list recieve
-    // @body Fetch a list of items from SmartRedis DB
+    // @todo Implement receive for generic lists
+    // @body This is supposed to be a way to get stuff off the DB outside any dataset scope 
     NotImplemented;
 }
 

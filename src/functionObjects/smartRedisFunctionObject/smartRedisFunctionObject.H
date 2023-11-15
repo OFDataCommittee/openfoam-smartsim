@@ -141,10 +141,10 @@ public:
         virtual bool read(const dictionary&);
 
         //- Set dataset name on the DB
-        // @todo: Can we do better on naming conventions?
-        // @body: Current API is generic enough because naming scheme itself
-        //        is posted to the DB, and can be fetched by python scripts.
-        //        but this method's signature need to match Jinja2 rendering args!
+        // @todo: Can we do better on naming conventions on the DB?
+        // @body: Current API is generic enough because the naming scheme itself
+        //        is posted to the DB, and can be fetched by python clients.
+        //        but these method signatures need to match Jinja2 rendering args!
         virtual word datasetName
         (
             word timeIndex,
