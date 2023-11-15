@@ -107,9 +107,10 @@ Foam::functionObjects::fieldsToSmartRedisFunctionObject::execute()
         surfaceSymmTensorField
     >(fields_, mesh());
     // If the dataset exists, fetch it, otherwise create a new one
-    // @todo: Not clear what to do if the dataset exists but is not complete
-    // @body: Typically, we want to put all fields (from all types) into The
-    //        dataset and then send it
+    // @todo: Not really clear what to do if the dataset exists but is not complete
+    // @body: Typically, It's desirable to pack all fields (from all types) into The
+    //        dataset and then send it in a single interaction with the DB.
+    //        If this is repeated would the old fields be retained?
     autoPtr<DataSet> dsPtr;
     word dsName = datasetName(Foam::name(mesh().time().timeIndex()), Foam::name(Pstream::myProcNo()));
     if (redisDB_->client().dataset_exists(dsName)) {
