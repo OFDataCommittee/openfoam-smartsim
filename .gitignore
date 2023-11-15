@@ -62,6 +62,7 @@ core
 
 # Dependency files - anywhere
 *.dep
+CMakeLists.txt
 
 # lnInclude (symlink) directories - anywhere
 lnInclude
@@ -73,6 +74,9 @@ linux*Icc*/
 solaris*Gcc*/
 SunOS*Gcc*/
 platforms/
+linux64GccDPInt32Opt
+.clangd/
+**/.cache
 
 # Top-level build directories
 /build/
