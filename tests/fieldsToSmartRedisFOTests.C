@@ -217,7 +217,7 @@ TEMPLATE_TEST_CASE
     SECTION("Get a list of values from SmartRedis") {
         List<TestType> lst(12);
         for(auto& e : lst) {
-            constexpr int nComponents = functionObjects::smartRedisFunctionObject::NComponents<TestType>::value;
+            constexpr int nComponents = pTraits<TestType>::nComponents;
             if constexpr (nComponents > 1)
             {
                 for (int i = 0; i < nComponents; i++) {
@@ -230,7 +230,7 @@ TEMPLATE_TEST_CASE
         o0.sendList(lst, "lst");
         List<TestType> rcv(12);
         for(auto& e : rcv) {
-            constexpr int nComponents = functionObjects::smartRedisFunctionObject::NComponents<TestType>::value;
+            constexpr int nComponents = pTraits<TestType>::nComponents;
             if constexpr (nComponents > 1)
             {
                 for (int i = 0; i < nComponents; i++) {
