@@ -180,3 +180,67 @@ TEST_CASE("call sendAllFields on fields", "[cavity][serial][parallel]")
     }
     REQUIRE(fieldsExistsOnDB);
 }
+
+TEMPLATE_TEST_CASE
+(
+    "Generic send and recieve",
+    "[cavity][serial][parallel]",
+    scalar, vector, tensor
+)
+{
+    Time& runTime = *timePtr;
+    fvMesh mesh
+    (
+        IOobject
+        (
+            polyMesh::defaultRegion,
+            runTime.constant(),
+            runTime,
+            IOobject::MUST_READ,
+            IOobject::NO_WRITE
+        )
+    );
+    dictionary dict0;
+    dict0.set("region", polyMesh::defaultRegion);
+    dict0.set("type", "fieldsToSmartRedisFunctionObject");
+    dict0.set("fields", wordList());
+    dict0.set("clusterMode", false);
+    dict0.set("clientName", "default");
+    functionObjects::fieldsToSmartRedisFunctionObject o0("smartSim0", runTime, dict0);
+
+    SECTION("Send a list of values to SmartRedis") {
+        List<TestType> lst(12);
+        o0.sendList(lst, "lst");
+        CHECK(o0.client().key_exists("lst"));
+    }
+
+    SECTION("Get a list of values from SmartRedis") {
+        List<TestType> lst(12);
+        for(auto& e : lst) {
+            constexpr int nComponents = functionObjects::smartRedisFunctionObject::NComponents<TestType>::value;
+            if constexpr (nComponents > 1)
+            {
+                for (int i = 0; i < nComponents; i++) {
+                    e[i] = 0;
+                }
+            } else {
+                e = 0;
+            }
+        }
+        o0.sendList(lst, "lst");
+        List<TestType> rcv(12);
+        for(auto& e : rcv) {
+            constexpr int nComponents = functionObjects::smartRedisFunctionObject::NComponents<TestType>::value;
+            if constexpr (nComponents > 1)
+            {
+                for (int i = 0; i < nComponents; i++) {
+                    e[i] = 1;
+                }
+            } else {
+                e = 1;
+            }
+        }
+        o0.recvList(rcv, "lst");
+        CHECK(rcv == lst);
+    }
+}
