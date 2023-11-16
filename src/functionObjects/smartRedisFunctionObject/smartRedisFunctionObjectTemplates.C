@@ -114,9 +114,17 @@ void smartRedisFunctionObject::sendList
     const word& listName
 )
 {
-    // @todo Implement send for generic lists
-    // @body This is supposed to be a way to send stuff outside any dataset scope 
-    NotImplemented;
+    std::vector<size_t> dims = {
+        size_t(lst.size()),
+        size_t(NComponents<typename T::cmptType>::value)
+    };
+    client().put_tensor
+    (
+        listName,
+        const_cast<void*>(static_cast<const void*>(lst.cdata())),
+        dims,
+        SRTensorTypeDouble, SRMemLayoutContiguous
+    );
 }
 
 template<class T>
