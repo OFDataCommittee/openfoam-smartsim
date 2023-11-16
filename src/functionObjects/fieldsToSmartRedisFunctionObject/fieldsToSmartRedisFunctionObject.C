@@ -106,17 +106,14 @@ Foam::functionObjects::fieldsToSmartRedisFunctionObject::execute()
         surfaceSphericalTensorField,
         surfaceSymmTensorField
     >(fields_, mesh());
-    // If the dataset exists, fetch it, otherwise create a new one
-    // @todo: Not really clear what to do if the dataset exists but is not complete
-    // @body: Typically, It's desirable to pack all fields (from all types) into The
-    //        dataset and then send it in a single interaction with the DB.
-    //        If this is repeated would the old fields be retained?
+    // Proceed only if the dataset doesn't exist. 
     autoPtr<DataSet> dsPtr;
     word dsName = datasetName(Foam::name(mesh().time().timeIndex()), Foam::name(Pstream::myProcNo()));
     if (redisDB_->client().dataset_exists(dsName)) {
-        // Potentionally buggy behavior
-        DataSet ds = redisDB_->client().get_dataset(dsName);
-        dsPtr.reset(&ds);
+        FatalErrorInFunction
+            << "Dataset " << dsName << " already exists in the database." << nl
+            << "This is not allowed because it would be overriden." << nl
+            << exit(FatalError);
     } else {
         dsPtr.reset(new DataSet(dsName));
     }
