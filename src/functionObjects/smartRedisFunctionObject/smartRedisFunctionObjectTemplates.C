@@ -35,14 +35,6 @@ namespace Foam
 namespace functionObjects
 {
 
-// Specialization of components counting for double
-template<>
-struct smartRedisFunctionObject::NComponents<double>
-{
-    static constexpr label value = 1;
-};
-
-
 template<class T>
 void smartRedisFunctionObject::packFields
 (
@@ -56,7 +48,7 @@ void smartRedisFunctionObject::packFields
         const T& sField = mesh().lookupObject<T>(fName);
         std::vector<size_t> dims = {
             size_t(sField.size()),
-            size_t(NComponents<typename T::cmptType>::value)
+            size_t(pTraits<typename T::value_type>::nComponents)
         };
         word fNameDB = fieldName(fName, "internal");
         // @todo Again, SmartRedis API does not seem to prefer const-correctness
@@ -87,7 +79,7 @@ void smartRedisFunctionObject::recvFields
         {
             const T& sField = mesh().lookupObject<T>(fName);
             std::vector<size_t> dims = {
-                size_t(sField.size())* size_t(NComponents<typename T::cmptType>::value)
+                size_t(sField.size())*size_t(pTraits<typename T::value_type>::nComponents)
             };
             word fNameDB = fieldName(fName, "internal");
             ds.unpack_tensor
@@ -115,7 +107,7 @@ void smartRedisFunctionObject::sendList
 {
     std::vector<size_t> dims = {
         size_t(lst.size()),
-        size_t(NComponents<T>::value)
+        size_t(pTraits<T>::nComponents)
     };
     client().put_tensor
     (
@@ -140,7 +132,7 @@ void smartRedisFunctionObject::recvList
             << abort(FatalError);
     }
     std::vector<size_t> dims = {
-        size_t(lst.size())*size_t(NComponents<T>::value)
+        size_t(lst.size())*size_t(pTraits<T>::nComponents)
     };
     client().unpack_tensor
     (
