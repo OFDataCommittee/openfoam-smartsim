@@ -126,9 +126,23 @@ void smartRedisFunctionObject::recvList
     const word& listName
 )
 {
-    // @todo Implement receive for generic lists
-    // @body This is supposed to be a way to get stuff off the DB outside any dataset scope 
-    NotImplemented;
+    if (!client().key_exists(listName))
+    {
+        FatalErrorInFunction
+            << "SmartRedis tensor " << listName << " does not exist"
+            << abort(FatalError);
+    }
+    std::vector<size_t> dims = {
+        size_t(lst.size()),
+        size_t(NComponents<typename T::cmptType>::value)
+    };
+    client().get_tensor
+    (
+        listName,
+        lst.data(),
+        dims,
+        SRTensorTypeDouble, SRMemLayoutContiguous
+    );
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
