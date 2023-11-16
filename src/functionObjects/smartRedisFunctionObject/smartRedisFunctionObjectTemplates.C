@@ -87,11 +87,10 @@ void smartRedisFunctionObject::recvFields
         {
             const T& sField = mesh().lookupObject<T>(fName);
             std::vector<size_t> dims = {
-                size_t(sField.size()),
-                size_t(NComponents<typename T::cmptType>::value)
+                size_t(sField.size())* size_t(NComponents<typename T::cmptType>::value)
             };
             word fNameDB = fieldName(fName, "internal");
-            ds.get_tensor
+            ds.unpack_tensor
             (
                 fNameDB,
                 sField.internalField().data(),
@@ -116,7 +115,7 @@ void smartRedisFunctionObject::sendList
 {
     std::vector<size_t> dims = {
         size_t(lst.size()),
-        size_t(NComponents<typename T::cmptType>::value)
+        size_t(NComponents<T>::value)
     };
     client().put_tensor
     (
@@ -141,10 +140,9 @@ void smartRedisFunctionObject::recvList
             << abort(FatalError);
     }
     std::vector<size_t> dims = {
-        size_t(lst.size()),
-        size_t(NComponents<typename T::cmptType>::value)
+        size_t(lst.size())*size_t(NComponents<T>::value)
     };
-    client().get_tensor
+    client().unpack_tensor
     (
         listName,
         lst.data(),
