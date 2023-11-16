@@ -95,12 +95,6 @@ protected:
 
 public:
 
-    // Number of components in a field
-    template<class cmptType>
-    struct NComponents {
-        static constexpr label value = cmptType::nComponents;
-    };
-
     //- Runtime type information
     TypeName("smartRedis");
 
