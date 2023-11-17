@@ -111,7 +111,7 @@ void smartRedisFunctionObject::sendList
     };
     client().put_tensor
     (
-        listName,
+        listName+"_mpirank_"+Foam::name(Pstream::myProcNo()),
         const_cast<void*>(static_cast<const void*>(lst.cdata())),
         dims,
         SRTensorTypeDouble, SRMemLayoutContiguous
@@ -125,10 +125,11 @@ void smartRedisFunctionObject::recvList
     const word& listName
 )
 {
-    if (!client().key_exists(listName))
+    word key = listName+"_mpirank_"+Foam::name(Pstream::myProcNo());
+    if (!client().key_exists(key))
     {
         FatalErrorInFunction
-            << "SmartRedis tensor " << listName << " does not exist"
+            << "SmartRedis tensor " << key << " does not exist"
             << abort(FatalError);
     }
     std::vector<size_t> dims = {
@@ -136,7 +137,7 @@ void smartRedisFunctionObject::recvList
     };
     client().unpack_tensor
     (
-        listName,
+        key,
         lst.data(),
         dims,
         SRTensorTypeDouble, SRMemLayoutContiguous
