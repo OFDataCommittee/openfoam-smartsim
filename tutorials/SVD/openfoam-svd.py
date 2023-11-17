@@ -92,6 +92,7 @@ for field_name in field_names:
 
     # Compute the Singular Value Decomposition of the field
     field_svd = np.dot(U, np.dot(S, V))
+    field_svd = field_svd[:, np.newaxis]
 
     # Compute the mean error of the SVD 
     field = client.get_tensor(db_field_name)
