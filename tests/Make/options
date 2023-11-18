@@ -6,7 +6,7 @@ EXE_INC = -std=c++20 \
     -I$(FOAM_FOAMUT)/smartSimFunctionObject/lnInclude \
     -I$(FOAM_USER_LIBBIN)/catch2/include \
     -I$(LIB_SRC)/Pstream/lnInclude \
-    -I$(_REPO_ROOT)/src/functionObjects/lnInclude
+    -I$(_REPO_ROOT)/src/smartRedis/lnInclude
     
 EXE_LIBS = \
     -lfiniteVolume \
@@ -15,4 +15,4 @@ EXE_LIBS = \
     -L$(FOAM_USER_LIBBIN)/catch2/lib -l:libCatch2.a \
     -lPstream \
     -L$(SMARTREDIS_LIB) -lhiredis -lredis++ \
-    -lsmartredis -lSmartRedisFunctionObjects
+    -lsmartredis -lsmartRedisDatabase
