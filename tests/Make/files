@@ -1,5 +1,5 @@
 $(FOAM_FOAMUT)/tests/testDriver.C
 
-fieldsToSmartRedisFOTests.C
+smartRedisDatabaseTests.C
 
 EXE = ./testDriver
