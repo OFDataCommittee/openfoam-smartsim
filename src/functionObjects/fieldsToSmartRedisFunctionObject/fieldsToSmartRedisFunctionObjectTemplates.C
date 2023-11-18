@@ -35,36 +35,6 @@ namespace Foam
 namespace functionObjects
 {
 
-template<class... Types>
-bool fieldsToSmartRedisFunctionObject::checkAllFields
-(
-    const wordList& fieldNames,
-    const objectRegistry& obr
-)
-{
-    static_assert(sizeof...(Types) > 0, "At least one template argument is required");
-    forAll(fieldNames, fi) {
-        if (!(obr.foundObject<Types>(fieldNames[fi]) || ...)) {
-            FatalErrorInFunction
-                << "Field " << fieldNames[fi] << " not found in objectRegistry"
-                << " as any of the supported types." << nl
-                << exit(FatalError);
-        }
-    }
-    return true;
-}
-
-
-template<class... Types>
-void fieldsToSmartRedisFunctionObject::sendAllFields
-(
-    DataSet& ds,
-    const wordList& fieldNames
-)
-{
-    static_assert(sizeof...(Types) > 0, "At least one template argument is required");
-    (packFields<Types>(ds, fieldNames), ...);
-}
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
