@@ -95,52 +95,52 @@ void smartRedisDatabase::getFields
 }
 
 
-//template<class T>
-//void smartRedisDatabase::sendList
-//(
-//    const List<T>& lst,
-//    const word& listName
-//)
-//{
-//    std::vector<size_t> dims = {
-//        size_t(lst.size()),
-//        size_t(pTraits<T>::nComponents)
-//    };
-//    client().put_tensor
-//    (
-//        listName+"_mpirank_"+Foam::name(Pstream::myProcNo()),
-//        const_cast<void*>(static_cast<const void*>(lst.cdata())),
-//        dims,
-//        SRTensorTypeDouble, SRMemLayoutContiguous
-//    );
-//}
-//
-//template<class T>
-//void smartRedisDatabase::getList
-//(
-//    List<T>& lst,
-//    const word& listName
-//)
-//{
-//    word key = listName+"_mpirank_"+Foam::name(Pstream::myProcNo());
-//    if (!client().key_exists(key))
-//    {
-//        FatalErrorInFunction
-//            << "SmartRedis tensor " << key << " does not exist"
-//            << abort(FatalError);
-//    }
-//    std::vector<size_t> dims = {
-//        size_t(lst.size())*size_t(pTraits<T>::nComponents)
-//    };
-//    client().unpack_tensor
-//    (
-//        key,
-//        lst.data(),
-//        dims,
-//        SRTensorTypeDouble, SRMemLayoutContiguous
-//    );
-//}
-//
+template<class T>
+void smartRedisDatabase::sendList
+(
+    const List<T>& lst,
+    const word& listName
+)
+{
+    std::vector<size_t> dims = {
+        size_t(lst.size()),
+        size_t(pTraits<T>::nComponents)
+    };
+    client().put_tensor
+    (
+        listName+"_mpirank_"+Foam::name(Pstream::myProcNo()),
+        const_cast<void*>(static_cast<const void*>(lst.cdata())),
+        dims,
+        SRTensorTypeDouble, SRMemLayoutContiguous
+    );
+}
+
+template<class T>
+void smartRedisDatabase::getList
+(
+    List<T>& lst,
+    const word& listName
+)
+{
+    word key = listName+"_mpirank_"+Foam::name(Pstream::myProcNo());
+    if (!client().key_exists(key))
+    {
+        FatalErrorInFunction
+            << "SmartRedis tensor " << key << " does not exist"
+            << abort(FatalError);
+    }
+    std::vector<size_t> dims = {
+        size_t(lst.size())*size_t(pTraits<T>::nComponents)
+    };
+    client().unpack_tensor
+    (
+        key,
+        lst.data(),
+        dims,
+        SRTensorTypeDouble, SRMemLayoutContiguous
+    );
+}
+
 template<class... Types>
 bool smartRedisDatabase::checkAllFields
 (

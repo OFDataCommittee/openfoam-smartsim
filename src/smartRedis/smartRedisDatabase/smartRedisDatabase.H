@@ -231,13 +231,13 @@ public:
             const wordList& fieldNames
         );
 
-        ////- Send a list of objects to SmartRedis DB
-        //template<class T>
-        //void sendList(const List<T>& lst, const word& listName);
+        //- Send a list of objects to SmartRedis DB
+        template<class T>
+        void sendList(const List<T>& lst, const word& listName);
 
-        ////- Get a list of objects from SmartRedis DB
-        //template<class T>
-        //void getList(List<T>& lst, const word& listName);
+        //- Get a list of objects from SmartRedis DB
+        template<class T>
+        void getList(List<T>& lst, const word& listName);
 };
 
 
