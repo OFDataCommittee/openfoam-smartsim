@@ -1,0 +1,4 @@
+smartRedisAdapter/smartRedisAdapter.C
+smartRedisDatabase/smartRedisDatabase.C
+
+LIB = $(FOAM_USER_LIBBIN)/libsmartRedisDatabase

@@ -142,21 +142,6 @@ public:
         //- Executed at the final time-loop
         virtual bool end();
 
-        //- check if fields are registered
-        template<class... Types>
-        bool checkAllFields
-        (
-            const wordList& fieldNames,
-            const objectRegistry& obr
-        );
-
-        //- send all fields in the list
-        template<class... Types>
-        void sendAllFields
-        (
-            DataSet& ds,
-            const wordList& fieldNames
-        );
 };
 
 
