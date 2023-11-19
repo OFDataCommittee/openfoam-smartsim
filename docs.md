@@ -1,45 +1,59 @@
 # Function Objects for SmartRedis-OpenFOAM interaction
 
-## `smartRedisFunctionObject`
+## `smartRedisDatabase`
 
-This class is the building block for all SmartRedis-OpenFOAM interactions. And it's not usable on its own
-as it's an abstract class.
+This class is the building block for all SmartRedis-OpenFOAM interactions. It provides an interface to SmartRedis
+databases in three API levels:
 
-1. It opens a connection to the SmartRedis database through a client.
-2. It provides a standardized interface structuring the storage and retrieval of OpenFOAM fields
-   as datasets in the SmartRedis database. The exact way datasets and fields should be named
-   on the database is left to the users of this class. But at the moment, this is restricted by
-   the signature of `smartRedisFunctionObject::datasetName()` and `smartRedisFunctionObject::fieldName()`
-   abstract functions.
-3. It provides a standardized interface to send/receive OpenFOAM fields and lists to/from the
-   SmartRedis database as efficiently as possibly.
-4. It posts a unique metadata dataset to the database to allow clients written in other language
-   to interact with the provided data without exposing any bindings.
+1. Service API calls, which take only a list of OpenFOAM field names as an argument. Interactions with the DB
+    are then handled automatically. Examples of these calls are
+   - `void smartRedisDatabase::sendGeometricFields(const wordList& fields)`
+   - `void smartRedisDatabase::getGeometricFields(const wordList& fields)`
+2. Developer API calls, which take at least a `DataSet` object as an argument. These calls only handle local DataSet
+   objects, and do not interact with the DB.  Examples of these calls are
+   - `void smartRedisDatabase::packFields<Type>(DataSet&, const wordList&)`
+   - `void smartRedisDatabase::getFields<Type>(DataSet&, const wordList& fields)`
+3. Generic-interaction API calls, which deal with send and receiving a `List<Type>` of data elements to/from
+   the database directly, without packing things into datasets. These are great for one-time interactions and are
+   aware of MPI ranks. Examples of these calls include:
+   - `void smartRedisDatabase::sendList<Type>(List<Type>& lst, const word& newName)`
+   - `void smartRedisDatabase::getList<Type>(List<Type>& lst, const word& name)`
+
+This class also manages:
+
+- A naming convention of tensors on the Database which correspond to OpenFOAM fields (or parts of them)
+- A shared client between all `smartRedisDatabase` objects
+- A metadata `DataSet` which holds the naming convention templates and any arbitrary data a user
+  of this class may deem important
 
 ### Technical notes
 
 The metadata dataset is posted to the database at construction of the function object 
 through `postMetadata()` member method.
+
 This method posts everything it finds in `namingConvention_` member (a `HashTable<string>`). Hence,
 Any class inheriting from `smartRedisFunctionObject` can add its own/override metadata to the database
 by populating `namingConvention_` and calling `postMetadata()`.
 
-> All classes deriving from `smartRedisFunctionObject` will use a single client to interact with the Database
-> per MPI rank.
+To fetch the name of the dataset, one can
+```cpp
+// db is a smartRedisDatabase object
+db.updateNamingConventionState();
+word dsName = db.extractName("dataset", db.namingConventionState())
+```
 
 ## `fieldsToSmartRedisFunctionObject`
 
-This class is the simplest example of a fully-implemented `smartRedisFunctionObject`.
-It is used to pack and send (one-way communication to DB) selected OpenFOAM fields once per time step.
+This function object is used to pack and send (one-way communication to DB) selected OpenFOAM fields once per time step.
  
 To send `p`, `U` and `phi` "internal" fields to the database every time step, one could use:
 ```
-libs ("libSmartRedisFunctionObjects.so");
 functions
 {
     pUPhiTest
     {
         type fieldsToSmartRedis;
+        libs ("libsmartredisFunctionObjects.so");
         clusterMode off;
         fields (p U phi);
     }
@@ -48,20 +62,23 @@ functions
 
 ### Technical notes
 
-This class defines the following naming conventions, which are found in the `pUPhiTest_metadata` dataset:
+This class defines (and brag about) the following naming conventions, which are found in the `pUPhiTest_metadata` dataset:
 ```
-DataSetNaming   "pUPhiTest_timeindex_{{ timestep }}_mpirank_{{ processor }}"
-FieldNaming     "{{ field }}_{{ patch }}"
+The following Jinja2 templates define the naming convention:
+{
+    field           "field_name_{{ name }}_patch_{{ patch }}";
+    dataset         "pUPhiTest_time_index_{{ time_index }}_mpi_rank_{{ mpi_rank }}";
+}
 ```
 After running the Jinja2 templating engine on these conventions, a full field name on the database for the
 following data:
 ```
-timestep = 200
-field = p
+time_index = 200
+name = p
 patch = internal
-processor = 0
+mpi_rank = 0
 ```
-would look like `{pUPhiTest_timestep_200_mpirank_0}.p_internal`.
+would look like `{pUPhiTest_time_index_200_mpi_rank_0}.field_name_p_patch_internal`.
 
 At the moment, internal fields of volume and surface fields with components of the following types are supported:
 - scalar
