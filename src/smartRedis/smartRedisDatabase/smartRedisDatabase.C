@@ -220,12 +220,14 @@ Foam::smartRedisDatabase::sendGeometricFields
 void
 Foam::smartRedisDatabase::getGeometricFields
 (
-    const wordList& fileNames
+    const wordList& fieldNames
 )
 {
-    //@todo: Implement `getGeometricFields` method
-    //@body: This is supposed to get corresponding tensors from the Database and override OpenFOAM fields with them.
-    NotImplemented;
+    updateNamingConventionState();
+    word dsName = extractName("dataset", namingConventionState_);
+    client().poll_dataset(dsName, 10, 1000);
+    DataSet ds = client().get_dataset(dsName);
+    getAllFields<supportedFieldTypes>(ds, fieldNames);
 }
 
 // ************************************************************************* //
