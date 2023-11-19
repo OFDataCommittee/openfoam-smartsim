@@ -17,6 +17,7 @@ export LD_LIBRARY_PATH=$SMARTREDIS_LIB:$LD_LIBRARY_PATH
 export FOAM_CODE_TEMPLATES=$_REPO_ROOT/etc/dynamicCode/
 
 ## Compile OpenFOAM libs
+wmake libso src/smartRedis
 wmake libso src/functionObjects
 
 ## Set the databse to listen on lo:8000
