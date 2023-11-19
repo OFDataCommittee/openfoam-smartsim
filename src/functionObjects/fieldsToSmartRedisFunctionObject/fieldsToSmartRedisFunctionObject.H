@@ -27,9 +27,6 @@ License
 Class
     Foam::functionObjects::fieldsToSmartRedisFunctionObject
 
-Group
-    grpUtilitiesFunctionObjects
-
 Description
     Provides a general interface to interact with SmartRedis databases
     from OpenFOAM code.
@@ -39,33 +36,39 @@ Usage
     \verbatim
     difference
     {
-        type smartRedis;
-        libs (fieldsToSmartRedisFunctionObjects);
+        type fieldsToSmartRedis;
+        libs ("libsmartredisFunctionObjects.so");
 
         // Unique name for this function object instance
         name pU;
+
+        // SmartRedis client mode
+        clusterMode off;
+
+        // OpenFOAM fields to send to the database
+        fields (p U phi);
     }
     \endverbatim
 
-See also
-    Foam::functionObject
-
 SourceFiles
     fieldsToSmartRedisFunctionObject.C
-    fieldsToSmartRedisFunctionObjectTemplates.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef fieldsToSmartRedisFunctionObject_H
-#define fieldsToSmartRedisFunctionObject_H
+#ifndef functionObjects_fieldsToSmartRedisFunctionObject_H
+#define functionObjects_fieldsToSmartRedisFunctionObject_H
 
-#include "objectRegistry.H"
-#include "smartRedisFunctionObject.H"
+#include "fvMeshFunctionObject.H"
+#include "smartRedisDatabase.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
+
+// Forward declaration of classes
+class fvMesh;
+
 namespace functionObjects
 {
 
@@ -75,13 +78,14 @@ namespace functionObjects
 
 class fieldsToSmartRedisFunctionObject
 :
-    public functionObjects::smartRedisFunctionObject
+    public fvMeshFunctionObject,
+    public smartRedisDatabase
 {
 protected:
 
-    // Protected Data
+    // Protected Member Data
 
-        //- list of fields
+        //- list of fields to send
         wordList fields_;
 
     // Protected Member Functions
@@ -113,35 +117,16 @@ public:
     //- Destructor
     virtual ~fieldsToSmartRedisFunctionObject() = default;
 
-
     // Member Functions
-
-        //- Read and set the function object if its data have changed
-        virtual bool read(const dictionary&);
-
-        //- Set dataset name on the DB
-        virtual word datasetName(word timeIndex, word mpiRank) const {
-            return name() + "_timeindex_" + timeIndex + "_mpirank_" + mpiRank;
-        }
-
-        //- Set field name on the DB
-        virtual word fieldName
-        (
-            word field,
-            word patch = "internal"
-        ) const {
-            return field + "_" + patch;
-        }
-
-        //- Execute (at time-step)
+ 
+        //- Called at each ++ or += of the time-loop.
         virtual bool execute();
 
-        //- Write (at write interval)
+        //- Called at each ++ or += of the time-loop.
         virtual bool write();
-
-        //- Executed at the final time-loop
+        
+        //- Called when Time::run() determines that the time-loop exits.
         virtual bool end();
-
 };
 
 
@@ -151,10 +136,6 @@ public:
 } // End namespace Foam
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-#ifdef NoRepository
-    #include "fieldsToSmartRedisFunctionObjectTemplates.C"
-#endif
 
 #endif
 
