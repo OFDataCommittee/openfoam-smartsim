@@ -33,7 +33,7 @@ TEST_CASE("standard naming convention", "[cavity][serial][parallel]")
 
     // Dataset name should be always ready through the naming convention state
     dictionary schemeVals = db.namingConventionState();
-    REQUIRE(db.extractName("dataset", schemeVals) == "db0_time_index_0_mpi_rank_0");
+    REQUIRE(db.extractName("dataset", schemeVals) == word("db0_time_index_0_mpi_rank_")+Foam::name(Pstream::myProcNo()));
     // For a specific field, the convention state needs to be updated
     schemeVals.subDict("field").set<string>("name", "p");
     schemeVals.subDict("field").set<string>("patch", "internal");
@@ -217,6 +217,78 @@ TEST_CASE("send a list of fields of different types to the DB", "[cavity][serial
         fieldsExistOnDB = fieldsExistOnDB && (db.client().tensor_exists(fName));
     }
     REQUIRE(fieldsExistOnDB);
+}
+
+TEST_CASE("get a list of fields of different types from the DB", "[cavity][serial][parallel]")
+{
+    Time& runTime = *timePtr;
+    fvMesh mesh
+    (
+        IOobject
+        (
+            polyMesh::defaultRegion,
+            runTime.constant(),
+            runTime,
+            IOobject::MUST_READ,
+            IOobject::NO_WRITE
+        )
+    );
+    volScalarField p
+    (
+        IOobject
+        (
+            "p",
+            runTime.timeName(),
+            mesh,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE,
+            true
+        ),
+        mesh,
+        dimensionedScalar("p0", dimPressure, 0.0)
+    );
+    volVectorField U
+    (
+        IOobject
+        (
+            "U",
+            runTime.timeName(),
+            mesh,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE,
+            true
+        ),
+        mesh,
+        dimensionedVector("U0", dimVelocity, vector::zero)
+    );
+    dictionary dict0;
+    dict0.set("region", polyMesh::defaultRegion);
+    dict0.set("clusterMode", false);
+    dict0.set("clientName", "default");
+    smartRedisDatabase db("db0", runTime, dict0);
+
+    wordList fields{"p", "U"};
+    labelList ncomponents{1, 3};
+    db.sendGeometricFields(fields);
+    forAll(p, ci)
+    {
+        p[ci] = 1;
+    }
+    forAll(U, ci)
+    {
+        U[ci] = Foam::vector{1, 1, 1};
+    }
+    db.getGeometricFields(fields);
+    bool allValuesMatch = true;
+    forAll(p, ci)
+    {
+        allValuesMatch = allValuesMatch && (p[ci] == 0);
+    }
+    forAll(U, ci)
+    {
+        allValuesMatch = allValuesMatch && (U[ci] == vector::zero);
+    }
+    REQUIRE(allValuesMatch);
 }
 
 TEMPLATE_TEST_CASE
