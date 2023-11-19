@@ -109,15 +109,20 @@ Foam::smartRedisDatabase::postMetadata()
         DataSet ds(dsName);
         forAllConstIter(HashTable<wordList>, namingConvention_, i) {
             const wordList& args = *i;
-            word tmplt = (i.key() == "dataset" )? i.key() : name();
+            word tmplt = (i.key() == "dataset" )?  name() : i.key();
             forAll(args, e) {
-                tmplt += "_" + args[e] + "_{{" + args[e] + "}}";
+                tmplt += "_" + args[e] + "_{{ " + args[e] + " }}";
             }
             ds.add_meta_string(i.key(), tmplt);
             meta.set<string>(i.key(), tmplt);
         }
         redisDB_->client().put_dataset(ds);
     }
+    // @todo Relying on Jinja2 for templating
+    // @body Maybe this is the best course of action for c/fortran clients
+    //       wanting to interact with this class
+    Info<< "The following Jinja2 templates define the naming convention:"
+        << meta << endl;
     return meta;
 }
 
