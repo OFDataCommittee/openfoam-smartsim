@@ -44,13 +44,12 @@ timePrecision   6;
 
 runTimeModifiable true;
 
-libs ("libSmartRedisFunctionObjects.so");
-
 functions
 {
     pUPhiTest
     {
         type fieldsToSmartRedis;
+        libs ("libsmartredisFunctionObjects.so");
         clusterMode off;
         fields (p U phi);
     }
