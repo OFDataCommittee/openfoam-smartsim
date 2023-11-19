@@ -33,10 +33,10 @@ def get_field_name(fn_name, field_name, processor=0, timestep=None):
     """
     client.poll_dataset(fn_name+"_metadata", 10, 1000)
     meta = client.get_dataset(fn_name+"_metadata")
-    ds_naming = env.from_string(str(meta.get_meta_strings("DataSetNaming")[0]))
-    ds_name = ds_naming.render(timestep=timestep, processor=processor)
-    f_naming = env.from_string(meta.get_meta_strings("FieldNaming")[0])
-    f_name = f_naming.render(field=field_name, patch="internal")
+    ds_naming = env.from_string(str(meta.get_meta_strings("dataset")[0]))
+    ds_name = ds_naming.render(time_index=timestep, mpi_rank=processor)
+    f_naming = env.from_string(str(meta.get_meta_strings("field")[0]))
+    f_name = f_naming.render(name=field_name, patch="internal")
     return f"{{{ds_name}}}.{f_name}"
 
 def calc_svd(input_tensor):
