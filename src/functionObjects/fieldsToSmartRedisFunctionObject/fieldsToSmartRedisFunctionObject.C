@@ -27,12 +27,10 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "fieldsToSmartRedisFunctionObject.H"
-#include "volFields.H"
-#include "dictionary.H"
 #include "Time.H"
+#include "fvMesh.H"
 #include "addToRunTimeSelectionTable.H"
-#include "volFields.H"
-#include "surfaceFields.H"
+#include "smartRedisDatabase.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -47,8 +45,8 @@ namespace functionObjects
         fieldsToSmartRedisFunctionObject,
         dictionary
     );
-} // End namespace functionObjects
-} // End namespace Foam
+}
+}
 
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
@@ -60,77 +58,17 @@ Foam::functionObjects::fieldsToSmartRedisFunctionObject::fieldsToSmartRedisFunct
     const dictionary& dict
 )
 :
-    smartRedisFunctionObject(name, runTime, dict),
-    fields_(dict.lookupOrDefault("fields", wordList()))
-{
-    read(dict);
-    this->namingConvention_.set
-    (
-        "DataSetNaming",
-        datasetName("{{ timestep }}", "{{ processor }}")
-    );
-    this->namingConvention_.set
-    (
-        "FieldNaming",
-        fieldName("{{ field }}", "{{ patch }}")
-    );
-    Info
-        << "Naming conventions on the Database:"
-        << namingConvention_ << endl;
-    postMetadata();
-}
-
-
-// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
-
-bool
-Foam::functionObjects::fieldsToSmartRedisFunctionObject::read(const dictionary& dict)
-{
-    return fvMeshFunctionObject::read(dict);
-}
+    fvMeshFunctionObject(name, runTime, dict),
+    smartRedisDatabase(name, runTime, dict),
+    fields_(dict.lookup("fields"))
+{}
 
 bool
 Foam::functionObjects::fieldsToSmartRedisFunctionObject::execute()
 {
-    // !! before attempting DB communication !!
-    // First check if the mesh has all requested fields
-    checkAllFields<
-        volScalarField,
-        volVectorField,
-        volTensorField,
-        volSphericalTensorField,
-        volSymmTensorField,
-        surfaceScalarField,
-        surfaceVectorField,
-        surfaceTensorField,
-        surfaceSphericalTensorField,
-        surfaceSymmTensorField
-    >(fields_, mesh());
-    // Proceed only if the dataset doesn't exist. 
-    autoPtr<DataSet> dsPtr;
-    word dsName = datasetName(Foam::name(mesh().time().timeIndex()), Foam::name(Pstream::myProcNo()));
-    if (redisDB_->client().dataset_exists(dsName)) {
-        FatalErrorInFunction
-            << "Dataset " << dsName << " already exists in the database." << nl
-            << "This is not allowed because it would be overriden." << nl
-            << exit(FatalError);
-    } else {
-        dsPtr.reset(new DataSet(dsName));
-    }
-    sendAllFields<
-        volScalarField,
-        volVectorField,
-        volTensorField,
-        volSphericalTensorField,
-        volSymmTensorField,
-        surfaceScalarField,
-        surfaceVectorField,
-        surfaceTensorField,
-        surfaceSphericalTensorField,
-        surfaceSymmTensorField
-    >(*dsPtr, fields_);
-    // post the dataset
-    redisDB_->client().put_dataset(*dsPtr);
+    Info<< "Writing fields to SmartRedis database\n" << endl;
+    updateNamingConventionState();
+    sendGeometricFields(fields_);
     return true;
 }
 
@@ -141,13 +79,12 @@ Foam::functionObjects::fieldsToSmartRedisFunctionObject::write()
     return true;
 }
 
-
 bool
 Foam::functionObjects::fieldsToSmartRedisFunctionObject::end()
 {
     DataSet ds = getMetadata();
     ds.add_meta_string("EndTimeIndex", Foam::name(mesh().time().timeIndex()));
-    redisDB_->client().put_dataset(ds);
+    client().put_dataset(ds);
     return true;
 }
 
