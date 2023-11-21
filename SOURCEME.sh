@@ -6,8 +6,11 @@ cd "$_REPO_ROOT" || exit 1
 export FOAM_SMARTREDIS="$_REPO_ROOT/smartredis"
 if [ ! -d "$FOAM_SMARTREDIS" ]; then
     git clone https://github.com/CrayLabs/SmartRedis "$FOAM_SMARTREDIS"
+else
+    cd "$FOAM_SMARTREDIS" || exit 1
+    git pull origin develop
+    cd "${_REPO_ROOT}" || exit 1
 fi
-git subtree pull --prefix 2023-01/smartsim/smartredis https://github.com/CrayLabs/SmartRedis develop --squash
 cd "${FOAM_SMARTREDIS}" || exit 1
 make lib
 cd "$_REPO_ROOT" || exit 1

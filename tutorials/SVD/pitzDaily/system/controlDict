@@ -52,6 +52,7 @@ functions
         libs ("libsmartredisFunctionObjects.so");
         clusterMode off;
         fields (p U phi);
+        patches (internal);
     }
 }
 
