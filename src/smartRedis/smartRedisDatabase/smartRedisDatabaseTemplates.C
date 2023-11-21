@@ -37,60 +37,104 @@ template<class T>
 void smartRedisDatabase::packFields
 (
     DataSet& ds,
-    const wordList& fieldNames
+    const wordList& fieldNames,
+    const wordList& patchNames
 )
 {
+    checkPatchNames(patchNames);
     for (auto& fName : fieldNames)
     {
         if (!mesh().foundObject<T>(fName)) continue;
         const T& sField = mesh().lookupObject<T>(fName);
-        std::vector<size_t> dims = {
-            size_t(sField.size()),
-            size_t(pTraits<typename T::value_type>::nComponents)
-        };
-        dictionary schemeValues = namingConventionState_;
-        schemeValues.subDict("field").set<string>("name", fName);
-        schemeValues.subDict("field").set<string>("patch", "internal");
-        word fNameDB = extractName("field", schemeValues);
-        // @todo Again, SmartRedis API does not seem to prefer const-correctness
-        // @body Can add_tensor take a const pointer instead? I'd like to
-        //       fetch fields in const-correct manner, hence the following
-        //       horrible casting
-        ds.add_tensor
-        (
-            fNameDB,
-            const_cast<void*>(static_cast<const void*>(sField.internalField().cdata())),
-            dims,
-            SRTensorTypeDouble, SRMemLayoutContiguous
-        );
+        for (auto& pName : patchNames)
+        {
+            auto patch = mesh().boundaryMesh().findPatchID(pName);
+            std::vector<size_t> dims = {
+                size_t(pName == "internal" ? sField.size() : mesh().boundaryMesh()[patch].size()),
+                size_t(pTraits<typename T::value_type>::nComponents)
+            };
+            dictionary schemeValues = namingConventionState_;
+            schemeValues.subDict("field").set<string>("name", fName);
+            schemeValues.subDict("field").set<string>("patch", pName);
+            word fNameDB = extractName("field", schemeValues);
+            void* data = 
+                pName == "internal"
+                ? const_cast<void*>(static_cast<const void*>(sField.internalField().cdata()))
+                : const_cast<void*>(static_cast<const void*>(sField.boundaryField()[patch].cdata()));
+            // @todo Again, SmartRedis API does not seem to prefer const-correctness
+            // @body Can add_tensor take a const pointer instead? I'd like to
+            //       fetch fields in const-correct manner, hence the following
+            //       horrible casting
+            if (data != nullptr)
+            {
+                ds.add_tensor
+                (
+                    fNameDB,
+                    //const_cast<void*>(static_cast<const void*>(sField.internalField().cdata())),
+                    data,
+                    dims,
+                    SRTensorTypeDouble, SRMemLayoutContiguous
+                );
+            } else {
+                if (debug)
+                {
+                    WarningInFunction
+                        << "Field " << fName << " does not have patch " << pName
+                        << " allocated. Skipping sending to DB. This is probably fine." << endl;
+                }
+            }
+        }
     }
 }
 
+//@todo: reading patch values from DB might not make send 
+//@body: while sending face patch values to DB makes perfect sense,
+//       reading them back from DB may not be the best idea. This is implemented
+//       to follow the design pattern, and because the boundary is actually 
+//       exposed by a mutable reference
 template<class T>
 void smartRedisDatabase::getFields
 (
     DataSet& ds,
-    const wordList& fieldNames
+    const wordList& fieldNames,
+    const wordList& patchNames
 )
 {
+    checkPatchNames(patchNames);
     for (auto& fName : fieldNames)
     {
         if (!mesh().foundObject<T>(fName)) continue;
         T& sField = mesh().lookupObjectRef<T>(fName);
-        std::vector<size_t> dims = {
-            size_t(sField.size())*size_t(pTraits<typename T::value_type>::nComponents)
-        };
-        dictionary schemeValues = namingConventionState_;
-        schemeValues.subDict("field").set<string>("name", fName);
-        schemeValues.subDict("field").set<string>("patch", "internal");
-        word fNameDB = extractName("field", schemeValues);
-        ds.unpack_tensor
-        (
-            fNameDB,
-            sField.data(),
-            dims,
-            SRTensorTypeDouble, SRMemLayoutContiguous
-        );
+        for (auto& pName : patchNames)
+        {
+            auto patch = mesh().boundaryMesh().findPatchID(pName);
+            size_t patch_size = pName == "internal" ? sField.size() : mesh().boundaryMesh()[patch].size();
+            std::vector<size_t> dims = {
+                patch_size*size_t(pTraits<typename T::value_type>::nComponents)
+            };
+            dictionary schemeValues = namingConventionState_;
+            schemeValues.subDict("field").set<string>("name", fName);
+            schemeValues.subDict("field").set<string>("patch", pName);
+            word fNameDB = extractName("field", schemeValues);
+            void* data = pName == "internal" ? sField.data() : sField.boundaryFieldRef()[patch].data();
+            if (data != nullptr)
+            {
+                ds.unpack_tensor
+                (
+                    fNameDB,
+                    data,
+                    dims,
+                    SRTensorTypeDouble, SRMemLayoutContiguous
+                );
+            } else {
+                if (debug)
+                {
+                    WarningInFunction
+                        << "Field " << fName << " does not have patch " << pName
+                        << " allocated. Skipping reading from DB. This is probably fine." << endl;
+                }
+            }
+        }
     }
 }
 
@@ -173,7 +217,8 @@ template<class... Types>
 void smartRedisDatabase::sendAllFields
 (
     DataSet& ds,
-    const wordList& fieldNames
+    const wordList& fieldNames,
+    const wordList& patchNames
 )
 {
     static_assert
@@ -182,19 +227,20 @@ void smartRedisDatabase::sendAllFields
         "At least one template argument is required for sendAllFields"
     );
     checkAllFields<Types...>(fieldNames, mesh());
-    (packFields<Types>(ds, fieldNames), ...);
+    (packFields<Types>(ds, fieldNames, patchNames), ...);
 }
 
 template<class... Types>
 void smartRedisDatabase::getAllFields
 (
     DataSet& ds,
-    const wordList& fieldNames
+    const wordList& fieldNames,
+    const wordList& patchNames
 )
 {
     static_assert(sizeof...(Types) > 0, "At least one template argument is required");
     checkAllFields<Types...>(fieldNames, mesh());
-    (getFields<Types>(ds, fieldNames), ...);
+    (getFields<Types>(ds, fieldNames, patchNames), ...);
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

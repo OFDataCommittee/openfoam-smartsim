@@ -99,6 +99,24 @@ Foam::smartRedisDatabase::updateNamingConventionState()
     namingConventionState_ = createSchemeValues(values);
 }
 
+void
+Foam::smartRedisDatabase::checkPatchNames
+(
+    const wordList& patchNames
+) const
+{
+    for(auto& patch: patchNames)
+    {
+        if (patch != "internal" && mesh().boundaryMesh().findPatchID(patch) == -1)
+        {
+            FatalErrorInFunction
+                << "Boundary patch: " << patch
+                << " does not exist in mesh: " << region_
+                << nl << abort(FatalError);
+        }
+    }
+}
+
 Foam::dictionary
 Foam::smartRedisDatabase::postMetadata()
 {
@@ -207,27 +225,29 @@ Foam::smartRedisDatabase::getDBFieldName
 void
 Foam::smartRedisDatabase::sendGeometricFields
 (
-    const wordList& fieldNames
+    const wordList& fieldNames,
+    const wordList& patchNames
 )
 {
     updateNamingConventionState();
     word dsName = extractName("dataset", namingConventionState_);
     DataSet ds(dsName);
-    sendAllFields<supportedFieldTypes>(ds, fieldNames);
+    sendAllFields<supportedFieldTypes>(ds, fieldNames, patchNames);
     client().put_dataset(ds);
 }
 
 void
 Foam::smartRedisDatabase::getGeometricFields
 (
-    const wordList& fieldNames
+    const wordList& fieldNames,
+    const wordList& patchNames
 )
 {
     updateNamingConventionState();
     word dsName = extractName("dataset", namingConventionState_);
     client().poll_dataset(dsName, 10, 1000);
     DataSet ds = client().get_dataset(dsName);
-    getAllFields<supportedFieldTypes>(ds, fieldNames);
+    getAllFields<supportedFieldTypes>(ds, fieldNames, patchNames);
 }
 
 // ************************************************************************* //
