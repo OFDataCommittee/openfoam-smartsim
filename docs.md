@@ -5,15 +5,15 @@
 This class is the building block for all SmartRedis-OpenFOAM interactions. It provides an interface to SmartRedis
 databases in three API levels:
 
-1. Service API calls, which take only a list of OpenFOAM field names as an argument. Interactions with the DB
+1. **Service API calls,** which take only a list of OpenFOAM field names as an argument. Interactions with the DB
     are then handled automatically. Examples of these calls are
    - `void smartRedisDatabase::sendGeometricFields(const wordList& fields)`
    - `void smartRedisDatabase::getGeometricFields(const wordList& fields)`
-2. Developer API calls, which take at least a `DataSet` object as an argument. These calls only handle local DataSet
+2. **Developer API calls,** which take at least a `DataSet` object as an argument. These calls only handle local DataSet
    objects, and do not interact with the DB.  Examples of these calls are
    - `void smartRedisDatabase::packFields<Type>(DataSet&, const wordList&)`
    - `void smartRedisDatabase::getFields<Type>(DataSet&, const wordList& fields)`
-3. Generic-interaction API calls, which deal with send and receiving a `List<Type>` of data elements to/from
+3. **Generic-interaction API calls,** which deal with send and receiving a `List<Type>` of data elements to/from
    the database directly, without packing things into datasets. These are great for one-time interactions and are
    aware of MPI ranks. Examples of these calls include:
    - `void smartRedisDatabase::sendList<Type>(List<Type>& lst, const word& newName)`
@@ -28,19 +28,21 @@ This class also manages:
 
 ### Technical notes
 
-The metadata dataset is posted to the database at construction of the function object 
-through `postMetadata()` member method.
-
-This method posts everything it finds in `namingConvention_` member (a `HashTable<string>`). Hence,
-Any class inheriting from `smartRedisFunctionObject` can add its own/override metadata to the database
-by populating `namingConvention_` and calling `postMetadata()`.
-
-To fetch the name of the dataset, one can
-```cpp
-// db is a smartRedisDatabase object
-db.updateNamingConventionState();
-word dsName = db.extractName("dataset", db.namingConventionState())
-```
+- The metadata dataset is posted to the database at construction of the `smartRedisDatabase` object
+  through `postMetadata()` member method.
+  - This method posts everything it finds in `namingConvention_` member (a `HashTable<string>`). Hence,
+    Any class inheriting from `smartRedisDatabase` can add its own/override metadata to the database
+    by populating `namingConvention_` and calling `postMetadata()`.
+  - To fetch the name of the dataset, one can
+    ```cpp
+    // db is a smartRedisDatabase object
+    db.updateNamingConventionState();
+    word dsName = db.extractName("dataset", db.namingConventionState())
+    ```
+- By default, all field-related methods treat the "internal" field
+  - But a list of boundary patches can be supplied
+  - And if an MPI rank does not have the particular patch allocated (size == 0), it will not be
+    communicated with the database. Clients from other languages need to take this into consideration.
 
 ## `fieldsToSmartRedisFunctionObject`
 
@@ -56,34 +58,35 @@ functions
         libs ("libsmartredisFunctionObjects.so");
         clusterMode off;
         fields (p U phi);
+        patches (internal);
     }
 }
 ```
 
 ### Technical notes
 
-This class defines (and brag about) the following naming conventions, which are found in the `pUPhiTest_metadata` dataset:
-```
-The following Jinja2 templates define the naming convention:
-{
-    field           "field_name_{{ name }}_patch_{{ patch }}";
-    dataset         "pUPhiTest_time_index_{{ time_index }}_mpi_rank_{{ mpi_rank }}";
-}
-```
-After running the Jinja2 templating engine on these conventions, a full field name on the database for the
-following data:
-```
-time_index = 200
-name = p
-patch = internal
-mpi_rank = 0
-```
-would look like `{pUPhiTest_time_index_200_mpi_rank_0}.field_name_p_patch_internal`.
-
-At the moment, internal fields of volume and surface fields with components of the following types are supported:
-- scalar
-- vector
-- tensor, symmetric tensor, and spherical tensor 
+- This class defines (and brag about) the following naming conventions, which are found in the `pUPhiTest_metadata` dataset:
+  ```
+  The following Jinja2 templates define the naming convention:
+  {
+      field           "field_name_{{ name }}_patch_{{ patch }}";
+      dataset         "pUPhiTest_time_index_{{ time_index }}_mpi_rank_{{ mpi_rank }}";
+  }
+  ```
+  - After running the Jinja2 templating engine on these conventions, a full field name on the database for the
+    following data:
+    ```
+    time_index = 200
+    name = p
+    patch = internal
+    mpi_rank = 0
+    ```
+    would look like `{pUPhiTest_time_index_200_mpi_rank_0}.field_name_p_patch_internal`.
+  - At the moment, internal and boundary patch parts of volume and surface fields with
+    components of the following types are supported:
+    - scalar
+    - vector
+    - tensor, symmetric tensor, and spherical tensor 
 
 ## Unit tests
 
