@@ -40,7 +40,7 @@ TEST_CASE("standard naming convention", "[cavity][serial][parallel]")
     REQUIRE(db.extractName("field", schemeVals) == "field_name_p_patch_internal");
 }
 
-TEST_CASE("packing of scalar fields to a dataset", "[cavity][serial][parallel]")
+TEST_CASE("packing of scalar fields with patches to a dataset", "[cavity][serial][parallel]")
 {
     Time& runTime = *timePtr;
     fvMesh mesh
@@ -76,29 +76,35 @@ TEST_CASE("packing of scalar fields to a dataset", "[cavity][serial][parallel]")
 
     DataSet ds(db.name() + "_test");
     wordList fields{"p"};
-    db.packFields<volScalarField>(ds, fields);
+    wordList patches{"internal", "movingWall"};
+    db.packFields<volScalarField>(ds, fields, patches);
     bool fieldsExistOnDB = true;
     bool fieldsDimsMatch = true;
     auto ts = ds.get_tensor_names();
+    auto ndims = [&mesh] (const word& pName)
+    {
+        label patch = mesh.boundaryMesh().findPatchID(pName);
+        return pName == "internal" ? mesh.nCells() : mesh.boundaryMesh()[patch].size();
+    };
     forAll(fields, i){
-        dictionary values;
-        values.set<string>("time_index", Foam::name(mesh.time().timeIndex()));
-        values.set<string>("mpi_rank", Foam::name(Pstream::myProcNo()));
-        values.set<string>("name", fields[i]);
-        values.set<string>("patch", "internal");
-        dictionary schemeVals = db.createSchemeValues(values);
-        auto fName = db.extractName("field", schemeVals);
-        fieldsExistOnDB = fieldsExistOnDB && (std::find(ts.begin(), ts.end(), fName) != ts.end());
-        if (fieldsExistOnDB) {
-            const auto& dims = ds.get_tensor_dims(fName);
-            fieldsDimsMatch = fieldsDimsMatch && (dims[0]*dims[1] == mesh.nCells()*pTraits<scalar>::nComponents);
+        forAll(patches, j){
+            if (patches[j] != "internal" && mesh.boundaryMesh()[patches[j]].size() == 0) continue;
+            dictionary schemeValues = db.namingConventionState();
+            schemeValues.subDict("field").set<string>("name", fields[i]);
+            schemeValues.subDict("field").set<string>("patch", patches[j]);
+            auto fName = db.extractName("field", schemeValues);
+            fieldsExistOnDB = fieldsExistOnDB && (std::find(ts.begin(), ts.end(), fName) != ts.end());
+            if (fieldsExistOnDB) {
+                const auto& dims = ds.get_tensor_dims(fName);
+                fieldsDimsMatch = fieldsDimsMatch && (dims[0]*dims[1] == ndims(patches[j])*pTraits<scalar>::nComponents);
+            }
         }
     }
     CHECK(fieldsExistOnDB);
     REQUIRE(fieldsDimsMatch);
 }
 
-TEST_CASE("getting scalar fields from a dataset", "[cavity][serial][parallel]")
+TEST_CASE("getting scalar fields from a dataset with patches", "[cavity][serial][parallel]")
 {
     Time& runTime = *timePtr;
     fvMesh mesh
@@ -134,14 +140,22 @@ TEST_CASE("getting scalar fields from a dataset", "[cavity][serial][parallel]")
 
     DataSet ds(db.name() + "_test");
     wordList fields{"p"};
-    db.packFields<volScalarField>(ds, fields);
+    wordList patches{"internal", "movingWall"};
+    auto patchID = mesh.boundaryMesh().findPatchID(patches[1]);
+    db.packFields<volScalarField>(ds, fields, patches);
     forAll(p, ci) {
         p[ci] = 1.0;
     }
-    db.getFields<volScalarField>(ds, fields);
+    forAll(p.boundaryField()[patchID], fi){
+        p.boundaryFieldRef()[patchID][fi] = 1.0;
+    }
+    db.getFields<volScalarField>(ds, fields, patches);
     bool hasExpectedValues = true;
-    forAll(fields[0], ci){
+    forAll(p, ci){
         hasExpectedValues = hasExpectedValues && (p[ci] == 0.0);
+    }
+    forAll(p.boundaryField()[patchID], fi){
+        hasExpectedValues = hasExpectedValues && (p.boundaryField()[patchID][fi] == 0.0);
     }
     REQUIRE(hasExpectedValues);
 }
