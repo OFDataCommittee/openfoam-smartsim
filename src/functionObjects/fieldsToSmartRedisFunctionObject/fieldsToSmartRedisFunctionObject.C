@@ -60,7 +60,8 @@ Foam::functionObjects::fieldsToSmartRedisFunctionObject::fieldsToSmartRedisFunct
 :
     fvMeshFunctionObject(name, runTime, dict),
     smartRedisDatabase(name, runTime, dict),
-    fields_(dict.lookup("fields"))
+    fields_(dict.lookup("fields")),
+    patches_(dict.lookupOrDefault("patches", wordList{"internal"}))
 {}
 
 bool
@@ -68,7 +69,7 @@ Foam::functionObjects::fieldsToSmartRedisFunctionObject::execute()
 {
     Info<< "Writing fields to SmartRedis database\n" << endl;
     updateNamingConventionState();
-    sendGeometricFields(fields_);
+    sendGeometricFields(fields_, patches_);
     return true;
 }
 

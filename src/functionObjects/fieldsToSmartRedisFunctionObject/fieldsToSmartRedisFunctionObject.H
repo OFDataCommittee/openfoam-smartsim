@@ -47,6 +47,10 @@ Usage
 
         // OpenFOAM fields to send to the database
         fields (p U phi);
+
+        // OpenFOAM patches to send
+        // "internal" is a special patch refering to internal field
+        patches (internal inlet);
     }
     \endverbatim
 
@@ -87,6 +91,9 @@ protected:
 
         //- list of fields to send
         wordList fields_;
+
+        //- list of patches to send
+        wordList patches_;
 
     // Protected Member Functions
 
