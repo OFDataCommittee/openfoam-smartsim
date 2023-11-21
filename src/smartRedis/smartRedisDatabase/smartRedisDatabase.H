@@ -95,6 +95,12 @@ protected:
         //- Update naming convention state
         virtual void updateNamingConventionState();
 
+        //- Check patch names
+        void checkPatchNames
+        (
+            const wordList& patchNames
+        ) const;
+
         //- check if fields are registered
         template<class... Types>
         bool checkAllFields
@@ -108,7 +114,8 @@ protected:
         void sendAllFields
         (
             DataSet& ds,
-            const wordList& fieldNames
+            const wordList& fieldNames,
+            const wordList& patchNames = wordList{"internal"}
         );
         
         //- get all fields in the list
@@ -116,7 +123,8 @@ protected:
         void getAllFields
         (
             DataSet& ds,
-            const wordList& fieldNames
+            const wordList& fieldNames,
+            const wordList& patchNames = wordList{"internal"}
         );
         
         //- No copy construct
@@ -206,7 +214,8 @@ public:
         void packFields
         (
             DataSet& ds,
-            const wordList& fieldNames
+            const wordList& fieldNames,
+            const wordList& patchNames = wordList{"internal"}
         );
 
         //- Get fields of type T from SmartRedis DB
@@ -214,7 +223,8 @@ public:
         void getFields
         (
             DataSet& ds,
-            const wordList& fieldNames
+            const wordList& fieldNames,
+            const wordList& patchNames = wordList{"internal"}
         );
 
         //- Send a set of OpenFOAM fields of any type as SmartRedis tensors
@@ -222,13 +232,15 @@ public:
         // @body This is the best example for a `void sendFields(const wordList& fieldNames) const;`
         void sendGeometricFields
         (
-            const wordList& fieldNames
+            const wordList& fieldNames,
+            const wordList& patchNames = wordList{"internal"}
         );
 
         //- Get a set of OpenFOAM fields of any type from SmartRedis tensors
         void getGeometricFields
         (
-            const wordList& fieldNames
+            const wordList& fieldNames,
+            const wordList& patchNames = wordList{"internal"}
         );
 
         //- Send a list of objects to SmartRedis DB
