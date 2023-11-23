@@ -22,6 +22,3 @@ export FOAM_CODE_TEMPLATES=$_REPO_ROOT/etc/dynamicCode/
 ## Compile OpenFOAM libs
 wmake libso src/smartRedis
 wmake libso src/functionObjects
-
-## Set the databse to listen on lo:8000
-export SSDB="127.0.0.1:8000" 
