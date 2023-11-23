@@ -57,14 +57,10 @@ void smartRedisDatabase::packFields
             schemeValues.subDict("field").set<string>("name", fName);
             schemeValues.subDict("field").set<string>("patch", pName);
             word fNameDB = extractName("field", schemeValues);
-            void* data = 
+            const void* data = 
                 pName == "internal"
-                ? const_cast<void*>(static_cast<const void*>(sField.internalField().cdata()))
-                : const_cast<void*>(static_cast<const void*>(sField.boundaryField()[patch].cdata()));
-            // @todo Again, SmartRedis API does not seem to prefer const-correctness
-            // @body Can add_tensor take a const pointer instead? I'd like to
-            //       fetch fields in const-correct manner, hence the following
-            //       horrible casting
+                ? sField.internalField().cdata()
+                : sField.boundaryField()[patch].cdata();
             if (data != nullptr)
             {
                 ds.add_tensor
