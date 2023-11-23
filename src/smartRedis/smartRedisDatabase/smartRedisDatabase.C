@@ -171,10 +171,6 @@ Foam::smartRedisDatabase::createSchemeValues
         dictionary subVals;
         word key = i.key();
         const wordList& args = *i;
-        // @todo: Better error handling when creating scheme values
-        // @body: If the user does not provide all the arguments for a name
-        //        convention; the code will crash. We need to provide a better
-        //        error message than `Entry '<something>' not found in dictionary ""`
         for(auto& arg: args) {
             if (allowIncomplete) {
                 if (values.found(arg))
@@ -184,6 +180,12 @@ Foam::smartRedisDatabase::createSchemeValues
                     subVals.set<string>(arg, "");
                 }
             } else {
+                if (!values.found(arg))
+                {
+                    FatalErrorInFunction
+                        << "Keyword '" << arg << "' not found in flat scheme values dictionary"
+                        << nl << abort(FatalError);
+                }
                 subVals.set<string>(arg, word(values.lookup(arg)));
             }
         }
