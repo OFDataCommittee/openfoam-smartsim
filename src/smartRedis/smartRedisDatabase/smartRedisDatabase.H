@@ -209,6 +209,13 @@ public:
             const word fName
         ) const;
 
+        //- Add a string to metadata dataset
+        void addToMetadata
+        (
+            const word& key,
+            const word& value
+        );
+
         //- Send fields of type T to SmartRedis Dataset
         template<class T>
         void packFields
