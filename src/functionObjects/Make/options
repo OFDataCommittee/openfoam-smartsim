@@ -1,0 +1,23 @@
+EXE_INC = --std=c++20 -Wno-old-style-cast \
+    -I$(LIB_SRC)/finiteVolume/lnInclude \
+    -I$(LIB_SRC)/finiteArea/lnInclude \
+    -I$(LIB_SRC)/fileFormats/lnInclude \
+    -I$(LIB_SRC)/surfMesh/lnInclude \
+    -I$(LIB_SRC)/meshTools/lnInclude \
+    -I$(LIB_SRC)/sampling/lnInclude \
+    -I$(SMARTREDIS_INCLUDE) \
+    -I$(_REPO_ROOT)/src/smartRedis/lnInclude
+
+LIB_LIBS = \
+    -lfiniteVolume \
+    -lfiniteArea \
+    -lfileFormats \
+    -lsurfMesh \
+    -lmeshTools \
+    -lsampling \
+    -L$(SMARTREDIS_LIB) \
+    -L$(FOAM_USER_LIBBIN) \
+    -lhiredis  \
+    -lredis++  \
+    -lsmartredis \
+    -lsmartRedisDatabase
