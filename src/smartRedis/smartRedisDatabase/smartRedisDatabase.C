@@ -225,6 +225,21 @@ Foam::smartRedisDatabase::getDBFieldName
 }
 
 void
+Foam::smartRedisDatabase::addToMetadata
+(
+    const word& key,
+    const word& value
+)
+{
+    if (Pstream::master())
+    {
+        DataSet ds = getMetadata();
+        ds.add_meta_string(key, value);
+        client().put_dataset(ds);
+    }
+}
+
+void
 Foam::smartRedisDatabase::sendGeometricFields
 (
     const wordList& fieldNames,
