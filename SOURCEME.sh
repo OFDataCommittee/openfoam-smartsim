@@ -22,3 +22,9 @@ export FOAM_CODE_TEMPLATES=$_REPO_ROOT/etc/dynamicCode/
 ## Compile OpenFOAM libs
 wmake libso src/smartRedis
 wmake libso src/functionObjects
+
+## Compile OpenFOAM utilities
+wmake applications/utilities/foamSmartSimSvd
+
+## Copile OpenFOAM solvers
+wmake applications/solvers/displacementSmartSimMotionSolver
