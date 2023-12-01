@@ -36,35 +36,37 @@ boundaryField
     {
         type        solidBodyMotionDisplacement;
         solidBodyMotionFunction  multiMotion;
-            multiMotionCoeffs
+        // @todo: check displacement configuration
+        // @body: had to set `multiMotionCoeffs.solidBodyMotionFunction` to `linearMotion` for things to work
+        multiMotionCoeffs
+        {
+            solidBodyMotionFunction  linearMotion;
+            translation
             {
-                translation
+                solidBodyMotionFunction  linearMotion;
+                linearMotionCoeffs
                 {
-                        solidBodyMotionFunction  linearMotion;
-                        linearMotionCoeffs
-                        {
-                            velocity   (0.1 0.05 0);
-                        }
-                }
-                rotation
-                {
-                    solidBodyMotionFunction rotatingMotion;
-                    rotatingMotionCoeffs
-                    {
-                        origin      (0 0 0);
-                        axis        (0 0 1);
-                        omega       0.1; // rad/s, 1rad/s=9.5rpm
-                    }
+                    velocity   (0.1 0.05 0);
                 }
             }
-        //solidBodyMotionFunction  oscillatingRotatingMotion;
-        //oscillatingRotatingMotionCoeffs
-        //{
-        //   origin      (0 0 0);
-        //   axis        (0 0 1);
-        //   omega       2;          // rad/s, 1rad/s=9.5rpm
-        //   amplitude   (0 0 20);    // max amplitude (degrees)
-        //}
+            rotation
+            {
+                solidBodyMotionFunction rotatingMotion;
+                rotatingMotionCoeffs
+                {
+                    origin      (0 0 0);
+                    axis        (0 0 1);
+                    omega       0.1; // rad/s, 1rad/s=9.5rpm
+                }
+            }
+        }
+        oscillatingRotatingMotionCoeffs
+        {
+            origin      (0 0 0);
+            axis        (0 0 1);
+            omega       2;          // rad/s, 1rad/s=9.5rpm
+            amplitude   (0 0 20);    // max amplitude (degrees)
+        }
     }
 
     walls
