@@ -1,18 +1,18 @@
 # Compile the foamSmartSimSvd application 
 
-1. [Install smartredis + smartsim](https://www.craylabs.org/docs/installation_instructions/basic.html#smartredis) 
-1. Install OpenFOAM and source OpenFOAM environment. 
-2. Activate conda environment.  
+Refer to [README.md](/README.md) for requirements.
 
-```
-foamSmartSimSvd> source set-smertredis-env.sh 
-foamSmartSimSvd> wmake foamSmartSimSvd 
+```bash
+# source SOURCEME.sh from the root folder of this repo
+foamSmartSimSvd> source ../../../SOURCEME.sh
 ```
 
-# Running the foamSmartSimSvd application
+# Running the `foamSmartSimSvd` application
+
+The notebook expects port 8000 to be free on your local machine.
 
 ```
-foamSmartSimSvd> jupyter notebook foam-smartsim-dmd.ipynb
+foamSmartSimSvd> jupyter notebook foam-smartsim-svd.ipynb
 ```
 
 Click on `Run->Run all cells`.
