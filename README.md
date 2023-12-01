@@ -23,19 +23,20 @@ The source code license: GPL-3.0-or-later
 
 ## Building
 
-The OpenFOAM-SmartSim coupling functions over a connection that OpenFOAM as a client maintains with the SmartRedis database. This means that OpenFOAM elements (application, solver, function object, boundary condition, etc.) must be able to include SmartRedis source folders and link with a SmartRedis library. To facilitate this, ensure that the OpenFOAM environment is active and that SmartRedis can be found. Check that the `PETSC_ARCH_PATH` environment variable is properly set. If the variable is empty, source the `configure-smartredis.sh` script.
+The OpenFOAM-SmartSim coupling functions over a connection that OpenFOAM as a client maintains with the SmartRedis database. This means that OpenFOAM elements (application, solver, function object, boundary condition, etc.) must be able to include SmartRedis source folders and link with a SmartRedis library. To facilitate this, a Bash script is provided:
 
-Using the supplied `Allwmake` script without arguments:
-
+```Bash
+# This will set up your environment, get smartredis, and compile all libs and apps 
+source SOURCEME.sh
 ```
-./Allwmake
-```
-
-will install the example OpenFOAM-SmartSim applications and libraries into `FOAM_USER_LIBBIN`. 
 
 ## How to use it
 
-TODO
+- Run `source SOURCEME.sh`
+  - This will fetch latest-n-greatest (and compile) [SmartRedis](https://github.com/CrayLabs/SmartRedis) for you
+  - It will compile the OpenFOAM libs provided in `src` into your `$FOAM_USER_LIBBIN`
+- Make sure port 8000 is free. `ss -plant  | grep 8000` should return nothing!
+- Head to one of the tutorials, and run the python script you find there
 
 ## Authors / Contributors
 
@@ -45,6 +46,7 @@ TODO
 | Andrew Shao | HPE | |
 | Andre Weiner | TU Dresden | |
 | Matt  Ellis | HPE | |
+| Mohammed Elwardi Fadeli | TU Darmstadt | |
 | Tomislav Maric | TU Darmstadt | |
 
 ----
