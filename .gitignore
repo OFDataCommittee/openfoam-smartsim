@@ -213,3 +213,5 @@ smartredis
 *.out
 *.err
 *.dat
+log.*
+*.log
