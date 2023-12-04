@@ -1,5 +1,7 @@
 #!/usr/bin/bash
 
+orig_dit="$(pwd)"
+
 ## Compile SmartRedis libs
 export _REPO_ROOT="$(git rev-parse --show-toplevel)"
 cd "$_REPO_ROOT" || exit 1
@@ -25,6 +27,9 @@ wmake libso src/functionObjects
 
 ## Compile OpenFOAM utilities
 wmake applications/utilities/foamSmartSimSvd
+wmake applications/utilities/foamSmartSimSvdDBAPI
 
 ## Copile OpenFOAM solvers
 wmake applications/solvers/displacementSmartSimMotionSolver
+
+cd "$orig_dir" || exit 1
