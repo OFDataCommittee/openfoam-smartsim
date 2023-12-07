@@ -1,41 +1,41 @@
 # Function Objects for SmartRedis-OpenFOAM interaction
 
-## `smartRedisDatabase`
+## `smartRedisClient`
 
 This class is the building block for all SmartRedis-OpenFOAM interactions. It provides an interface to SmartRedis
 databases in three API levels:
 
 1. **Service API calls,** which take only a list of OpenFOAM field names as an argument. Interactions with the DB
     are then handled automatically. Examples of these calls are
-   - `void smartRedisDatabase::sendGeometricFields(const wordList& fields)`
-   - `void smartRedisDatabase::getGeometricFields(const wordList& fields)`
+   - `void smartRedisClient::sendGeometricFields(const wordList& fields)`
+   - `void smartRedisClient::getGeometricFields(const wordList& fields)`
 2. **Developer API calls,** which take at least a `DataSet` object as an argument. These calls only handle local DataSet
    objects, and do not interact with the DB.  Examples of these calls are
-   - `void smartRedisDatabase::packFields<Type>(DataSet&, const wordList&)`
-   - `void smartRedisDatabase::getFields<Type>(DataSet&, const wordList& fields)`
+   - `void smartRedisClient::packFields<Type>(DataSet&, const wordList&)`
+   - `void smartRedisClient::getFields<Type>(DataSet&, const wordList& fields)`
 3. **Generic-interaction API calls,** which deal with send and receiving a `List<Type>` of data elements to/from
    the database directly, without packing things into datasets. These are great for one-time interactions and are
    aware of MPI ranks. Examples of these calls include:
-   - `void smartRedisDatabase::sendList<Type>(List<Type>& lst, const word& newName)`
-   - `void smartRedisDatabase::getList<Type>(List<Type>& lst, const word& name)`
+   - `void smartRedisClient::sendList<Type>(List<Type>& lst, const word& newName)`
+   - `void smartRedisClient::getList<Type>(List<Type>& lst, const word& name)`
 
 This class also manages:
 
 - A naming convention of tensors on the Database which correspond to OpenFOAM fields (or parts of them)
-- A shared client between all `smartRedisDatabase` objects
+- A shared client between all `smartRedisClient` objects
 - A metadata `DataSet` which holds the naming convention templates and any arbitrary data a user
   of this class may deem important
 
 ### Technical notes
 
-- The metadata dataset is posted to the database at construction of the `smartRedisDatabase` object
+- The metadata dataset is posted to the database at construction of the `smartRedisClient` object
   through `postMetadata()` member method.
   - This method posts everything it finds in `namingConvention_` member (a `HashTable<string>`). Hence,
-    Any class inheriting from `smartRedisDatabase` can add its own/override metadata to the database
+    Any class inheriting from `smartRedisClient` can add its own/override metadata to the database
     by populating `namingConvention_` and calling `postMetadata()`.
   - To fetch the name of the dataset, one can
     ```cpp
-    // db is a smartRedisDatabase object
+    // db is a smartRedisClient object
     db.updateNamingConventionState();
     word dsName = db.extractName("dataset", db.namingConventionState())
     ```
