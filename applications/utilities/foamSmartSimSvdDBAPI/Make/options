@@ -9,4 +9,4 @@ EXE_LIBS = \
     -lmeshTools \
     -L$(SMARTREDIS_LIB) -lhiredis -lredis++ \
     -lsmartredis \
-    -L$(FOAM_USER_LIBBIN) -lsmartRedisDatabase
+    -L$(FOAM_USER_LIBBIN) -lsmartRedisClient

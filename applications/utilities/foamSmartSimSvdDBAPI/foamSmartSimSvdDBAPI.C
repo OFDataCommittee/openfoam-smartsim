@@ -36,7 +36,7 @@ Description
 #include "fvCFD.H"
 #include "wordList.H"
 #include "timeSelector.H"
-#include "smartRedisDatabase.H"
+#include "smartRedisClient.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -68,7 +68,7 @@ int main(int argc, char *argv[])
     dbDict.set("region", polyMesh::defaultRegion);
     dbDict.set("clusterMode", false);
     dbDict.set("clientName", "default");
-    smartRedisDatabase db
+    smartRedisClient db
     (
         "foamSmartSimSvdDBAPI",
         runTime,
