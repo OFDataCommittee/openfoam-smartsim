@@ -5,7 +5,7 @@
 #include "fvCFD.H"
 #include "fvMesh.H"
 
-#include "smartRedisDatabase.H"
+#include "smartRedisClient.H"
 
 using namespace Foam;
 extern Time* timePtr;
@@ -29,7 +29,7 @@ TEST_CASE("standard naming convention", "[cavity][serial][parallel]")
     dict0.set("region", polyMesh::defaultRegion);
     dict0.set("clusterMode", false);
     dict0.set("clientName", "default");
-    smartRedisDatabase db("db0", runTime, dict0);
+    smartRedisClient db("db0", runTime, dict0);
 
     // Dataset name should be always ready through the naming convention state
     dictionary schemeVals = db.namingConventionState();
@@ -72,7 +72,7 @@ TEST_CASE("packing of scalar fields with patches to a dataset", "[cavity][serial
     dict0.set("region", polyMesh::defaultRegion);
     dict0.set("clusterMode", false);
     dict0.set("clientName", "default");
-    smartRedisDatabase db("db0", runTime, dict0);
+    smartRedisClient db("db0", runTime, dict0);
 
     DataSet ds(db.name() + "_test");
     wordList fields{"p"};
@@ -136,7 +136,7 @@ TEST_CASE("getting scalar fields from a dataset with patches", "[cavity][serial]
     dict0.set("region", polyMesh::defaultRegion);
     dict0.set("clusterMode", false);
     dict0.set("clientName", "default");
-    smartRedisDatabase db("db0", runTime, dict0);
+    smartRedisClient db("db0", runTime, dict0);
 
     DataSet ds(db.name() + "_test");
     wordList fields{"p"};
@@ -219,7 +219,7 @@ TEST_CASE("send a list of fields of different types to the DB", "[cavity][serial
     dict0.set("region", polyMesh::defaultRegion);
     dict0.set("clusterMode", false);
     dict0.set("clientName", "default");
-    smartRedisDatabase db("db0", runTime, dict0);
+    smartRedisClient db("db0", runTime, dict0);
 
     wordList fields{"p", "U", "phi"};
     labelList ncomponents{1, 3, 1};
@@ -279,7 +279,7 @@ TEST_CASE("get a list of fields of different types from the DB", "[cavity][seria
     dict0.set("region", polyMesh::defaultRegion);
     dict0.set("clusterMode", false);
     dict0.set("clientName", "default");
-    smartRedisDatabase db("db0", runTime, dict0);
+    smartRedisClient db("db0", runTime, dict0);
 
     wordList fields{"p", "U"};
     labelList ncomponents{1, 3};
@@ -328,7 +328,7 @@ TEMPLATE_TEST_CASE
     dict0.set("region", polyMesh::defaultRegion);
     dict0.set("clusterMode", false);
     dict0.set("clientName", "default");
-    smartRedisDatabase db("db0", runTime, dict0);
+    smartRedisClient db("db0", runTime, dict0);
 
     SECTION("Send a list of values to SmartRedis") {
         List<TestType> lst(12);

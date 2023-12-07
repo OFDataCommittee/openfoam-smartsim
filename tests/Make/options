@@ -15,4 +15,4 @@ EXE_LIBS = \
     -L$(FOAM_USER_LIBBIN)/catch2/lib -l:libCatch2.a \
     -lPstream \
     -L$(SMARTREDIS_LIB) -lhiredis -lredis++ \
-    -lsmartredis -lsmartRedisDatabase
+    -lsmartredis -lsmartRedisClient
