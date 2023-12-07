@@ -27,7 +27,7 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "Ostream.H"
-#include "smartRedisDatabase.H"
+#include "smartRedisClient.H"
 #include "volFields.H"
 #include "surfaceFields.H"
 #include "dictionary.H"
@@ -38,12 +38,12 @@ License
 
 namespace Foam
 {
-    defineTypeNameAndDebug(smartRedisDatabase, 0);
+    defineTypeNameAndDebug(smartRedisClient, 0);
 } // End namespace Foam
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::smartRedisDatabase::smartRedisDatabase
+Foam::smartRedisClient::smartRedisClient
 (
     const word& name,
     const Time& runTime,
@@ -89,7 +89,7 @@ Foam::smartRedisDatabase::smartRedisDatabase
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 void
-Foam::smartRedisDatabase::updateNamingConventionState()
+Foam::smartRedisClient::updateNamingConventionState()
 {
     dictionary values;
     values.set<string>("time_index", Foam::name(mesh().time().timeIndex()));
@@ -100,7 +100,7 @@ Foam::smartRedisDatabase::updateNamingConventionState()
 }
 
 void
-Foam::smartRedisDatabase::checkPatchNames
+Foam::smartRedisClient::checkPatchNames
 (
     const wordList& patchNames
 ) const
@@ -118,7 +118,7 @@ Foam::smartRedisDatabase::checkPatchNames
 }
 
 Foam::dictionary
-Foam::smartRedisDatabase::postMetadata()
+Foam::smartRedisClient::postMetadata()
 {
     dictionary meta;
     if (Pstream::master() && this->namingConvention_.toc().size() > 0) {
@@ -145,7 +145,7 @@ Foam::smartRedisDatabase::postMetadata()
 }
 
 DataSet
-Foam::smartRedisDatabase::getMetadata()
+Foam::smartRedisClient::getMetadata()
 {
     word dsName = name()+"_metadata";
     if (!redisDB_->client().dataset_exists(dsName))
@@ -159,7 +159,7 @@ Foam::smartRedisDatabase::getMetadata()
 }
 
 Foam::dictionary
-Foam::smartRedisDatabase::createSchemeValues
+Foam::smartRedisClient::createSchemeValues
 (
     const dictionary& values,
     bool allowIncomplete
@@ -195,7 +195,7 @@ Foam::smartRedisDatabase::createSchemeValues
 }
 
 Foam::word
-Foam::smartRedisDatabase::extractName
+Foam::smartRedisClient::extractName
 (
     const word key,
     const dictionary& schemeValue
@@ -211,7 +211,7 @@ Foam::smartRedisDatabase::extractName
 }
 
 Foam::word
-Foam::smartRedisDatabase::getDBFieldName
+Foam::smartRedisClient::getDBFieldName
 (
     const word fName
 ) const
@@ -225,7 +225,7 @@ Foam::smartRedisDatabase::getDBFieldName
 }
 
 void
-Foam::smartRedisDatabase::addToMetadata
+Foam::smartRedisClient::addToMetadata
 (
     const word& key,
     const word& value
@@ -240,7 +240,7 @@ Foam::smartRedisDatabase::addToMetadata
 }
 
 void
-Foam::smartRedisDatabase::sendGeometricFields
+Foam::smartRedisClient::sendGeometricFields
 (
     const wordList& fieldNames,
     const wordList& patchNames
@@ -254,7 +254,7 @@ Foam::smartRedisDatabase::sendGeometricFields
 }
 
 void
-Foam::smartRedisDatabase::getGeometricFields
+Foam::smartRedisClient::getGeometricFields
 (
     const wordList& fieldNames,
     const wordList& patchNames

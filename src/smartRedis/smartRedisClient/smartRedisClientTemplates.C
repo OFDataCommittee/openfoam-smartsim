@@ -28,13 +28,13 @@ License
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-#include "smartRedisDatabase.H"
+#include "smartRedisClient.H"
 
 namespace Foam
 {
 
 template<class T>
-void smartRedisDatabase::packFields
+void smartRedisClient::packFields
 (
     DataSet& ds,
     const wordList& fieldNames,
@@ -89,7 +89,7 @@ void smartRedisDatabase::packFields
 //       to follow the design pattern, and because the boundary is actually 
 //       exposed by a mutable reference
 template<class T>
-void smartRedisDatabase::getFields
+void smartRedisClient::getFields
 (
     DataSet& ds,
     const wordList& fieldNames,
@@ -136,7 +136,7 @@ void smartRedisDatabase::getFields
 
 
 template<class T>
-void smartRedisDatabase::sendList
+void smartRedisClient::sendList
 (
     const List<T>& lst,
     const word& listName
@@ -156,7 +156,7 @@ void smartRedisDatabase::sendList
 }
 
 template<class T>
-void smartRedisDatabase::getList
+void smartRedisClient::getList
 (
     List<T>& lst,
     const word& listName
@@ -182,7 +182,7 @@ void smartRedisDatabase::getList
 }
 
 template<class... Types>
-bool smartRedisDatabase::checkAllFields
+bool smartRedisClient::checkAllFields
 (
     const wordList& fieldNames,
     const objectRegistry& obr
@@ -210,7 +210,7 @@ bool smartRedisDatabase::checkAllFields
 
 
 template<class... Types>
-void smartRedisDatabase::sendAllFields
+void smartRedisClient::sendAllFields
 (
     DataSet& ds,
     const wordList& fieldNames,
@@ -227,7 +227,7 @@ void smartRedisDatabase::sendAllFields
 }
 
 template<class... Types>
-void smartRedisDatabase::getAllFields
+void smartRedisClient::getAllFields
 (
     DataSet& ds,
     const wordList& fieldNames,

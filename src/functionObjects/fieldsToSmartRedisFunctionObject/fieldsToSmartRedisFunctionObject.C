@@ -30,7 +30,7 @@ License
 #include "Time.H"
 #include "fvMesh.H"
 #include "addToRunTimeSelectionTable.H"
-#include "smartRedisDatabase.H"
+#include "smartRedisClient.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -59,7 +59,7 @@ Foam::functionObjects::fieldsToSmartRedisFunctionObject::fieldsToSmartRedisFunct
 )
 :
     fvMeshFunctionObject(name, runTime, dict),
-    smartRedisDatabase(name, runTime, dict),
+    smartRedisClient(name, runTime, dict),
     fields_(dict.lookup("fields")),
     patches_(dict.lookupOrDefault("patches", wordList{"internal"}))
 {}
