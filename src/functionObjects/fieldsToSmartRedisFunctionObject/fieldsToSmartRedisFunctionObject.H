@@ -63,7 +63,7 @@ SourceFiles
 #define functionObjects_fieldsToSmartRedisFunctionObject_H
 
 #include "fvMeshFunctionObject.H"
-#include "smartRedisDatabase.H"
+#include "smartRedisClient.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -83,7 +83,7 @@ namespace functionObjects
 class fieldsToSmartRedisFunctionObject
 :
     public fvMeshFunctionObject,
-    public smartRedisDatabase
+    public smartRedisClient
 {
 protected:
 

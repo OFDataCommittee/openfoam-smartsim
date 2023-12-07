@@ -25,7 +25,7 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::smartRedisDatabase
+    Foam::smartRedisClient
 
 Description
     Provides an interface to interact with SmartRedis databases
@@ -35,13 +35,13 @@ See also
     Foam::functionObjects::fieldsToSmartRedisFunctionObject
 
 SourceFiles
-    smartRedisDatabase.C
-    smartRedisDatabaseTemplates.C
+    smartRedisClient.C
+    smartRedisClientTemplates.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef smartRedisDatabase_H
-#define smartRedisDatabase_H
+#ifndef smartRedisClient_H
+#define smartRedisClient_H
 
 #include "fvMesh.H"
 #include "smartRedisAdapter.H"
@@ -52,10 +52,10 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                     Class smartRedisDatabase Declaration
+                     Class smartRedisClient Declaration
 \*---------------------------------------------------------------------------*/
 
-class smartRedisDatabase
+class smartRedisClient
 {
 protected:
 
@@ -128,10 +128,10 @@ protected:
         );
         
         //- No copy construct
-        smartRedisDatabase(const smartRedisDatabase&) = delete;
+        smartRedisClient(const smartRedisClient&) = delete;
 
         //- No copy assignment
-        void operator=(const smartRedisDatabase&) = delete;
+        void operator=(const smartRedisClient&) = delete;
 
 
 public:
@@ -143,7 +143,7 @@ public:
     // Constructors
 
         //- Construct from Time and dictionary
-        smartRedisDatabase
+        smartRedisClient
         (
             const word& name,
             const Time& runTime,
@@ -152,7 +152,7 @@ public:
 
 
     //- Destructor
-    virtual ~smartRedisDatabase() = default;
+    virtual ~smartRedisClient() = default;
 
 
     // Member Functions
@@ -279,7 +279,7 @@ public:
     Foam::surfaceSymmTensorField
 
 #ifdef NoRepository
-    #include "smartRedisDatabaseTemplates.C"
+    #include "smartRedisClientTemplates.C"
 #endif
 
 #endif
