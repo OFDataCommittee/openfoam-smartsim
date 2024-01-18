@@ -16,9 +16,9 @@ The source code license: GPL-3.0-or-later
 
 ## Requirements
 
-1. [OpenFOAM-v2212] or newer, or a recent [development version][OpenFOAM-git]
+1. [OpenFOAM-v2312] or newer, or a recent [development version][OpenFOAM-git]
    from [OpenFOAM.com][OpenFOAM]. 
-2. [SmartSim] 0.5.1 
+2. [SmartSim] 0.6.0 
 2. [SmartRedis] N.N.N 
 
 ## Building
@@ -52,7 +52,7 @@ source SOURCEME.sh
 ----
 
 [OpenFOAM]: https://www.openfoam.com
-[OpenFOAM-v2212]: https://www.openfoam.com/releases/openfoam-v2212/
+[OpenFOAM-v2312]: https://www.openfoam.com/releases/openfoam-v2312/
 [OpenFOAM-git]: https://develop.openfoam.com/Development/openfoam
 
 [SmartSim]: https://github.com/CrayLabs/SmartSim 
