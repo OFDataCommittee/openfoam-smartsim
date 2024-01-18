@@ -235,8 +235,6 @@ public:
         );
 
         //- Send a set of OpenFOAM fields of any type as SmartRedis tensors
-        // @todo const-functions should also be enforced on the SmartRedis API
-        // @body This is the best example for a `void sendFields(const wordList& fieldNames) const;`
         void sendGeometricFields
         (
             const wordList& fieldNames,

@@ -83,11 +83,6 @@ void smartRedisClient::packFields
     }
 }
 
-//@todo: reading patch values from DB might not make send 
-//@body: while sending face patch values to DB makes perfect sense,
-//       reading them back from DB may not be the best idea. This is implemented
-//       to follow the design pattern, and because the boundary is actually 
-//       exposed by a mutable reference
 template<class T>
 void smartRedisClient::getFields
 (

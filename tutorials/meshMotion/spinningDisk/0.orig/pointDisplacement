@@ -36,8 +36,6 @@ boundaryField
     {
         type        solidBodyMotionDisplacement;
         solidBodyMotionFunction  multiMotion;
-        // @todo: check displacement configuration
-        // @body: had to set `multiMotionCoeffs.solidBodyMotionFunction` to `linearMotion` for things to work
         multiMotionCoeffs
         {
             solidBodyMotionFunction  linearMotion;
