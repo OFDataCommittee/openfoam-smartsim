@@ -136,9 +136,6 @@ Foam::smartRedisClient::postMetadata()
         }
         redisDB_->client().put_dataset(ds);
     }
-    // @todo Relying on Jinja2 for templating
-    // @body Maybe this is the best course of action for c/fortran clients
-    //       wanting to interact with this class
     Info<< "The following Jinja2 templates define the naming convention:"
         << meta << endl;
     return meta;
