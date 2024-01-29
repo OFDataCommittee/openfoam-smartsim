@@ -215,3 +215,9 @@ smartredis
 *.dat
 log.*
 *.log
+
+# polyMesh
+polyMesh/
+
+# Jupyter Notebook checkpoints 
+.ipynb_checkpoints/
