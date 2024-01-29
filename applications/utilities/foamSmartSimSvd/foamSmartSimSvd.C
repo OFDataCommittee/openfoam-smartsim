@@ -38,6 +38,8 @@ Description
 #include "wordList.H"
 #include "timeSelector.H"
 #include "client.h"
+#include <iomanip>
+#include <vector>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -68,7 +70,26 @@ int main(int argc, char *argv[])
 
     // Create a list of all time step folders from the case folder.
     instantList inputTimeDirs = timeSelector::select0(runTime, args);
+    const auto& currentTime = inputTimeDirs[0];
 
+    // Name the tensor in SmartRedis 
+    const auto mpiIndexStr = std::to_string(Pstream::myProcNo());
+    const auto tensorName = "fieldName_" + fieldName + 
+                            "-MPIrank_" + mpiIndexStr;  
+
+    // Read fields from the first time step.
+    #include "createFields.H"
+
+    // Reserve storage for OpenFOAM fields sent to SmartRedis for SVD 
+    std::vector<Foam::scalar> scalarXrank;
+    std::vector<Foam::vector> vectorXrank; 
+
+    if (!inputVolScalarFieldTmp->empty())
+    {
+        scalarXrank.reserve(mesh.nCells() * inputTimeDirs.size());
+    }
+
+    // Each MPI rank sends Xrank data tensor for torch.svd in SmartRedis
     forAll(inputTimeDirs, timeI)
     {
         const auto& currentTime = inputTimeDirs[timeI];
@@ -78,38 +99,25 @@ int main(int argc, char *argv[])
         // If 'field' is a volScalarField 
         if (!inputVolScalarFieldTmp->empty())
         {
-            // Create the cell centers DataSet
-            const auto mpiIndexStr = std::to_string(Pstream::myProcNo());
-
-            const auto redisFieldName = "field_" + fieldName + 
-                                        "_time_" + currentTime.name() +
-                                        "_MPIrank_" + mpiIndexStr; 
-
-            auto redisDatasetName = "dataset_" + redisFieldName; 
-            SmartRedis::DataSet redisDataset(redisDatasetName);
-
-            // Add the type name into the input field dataset metadata. 
-            redisDataset.add_meta_string("type", "scalar");
-
-            //- Put the input field in smartredis.
-            Pout << "Writing field " << redisFieldName 
-                << " to SmartRedis. " << endl;
-
-            redisDataset.add_tensor(redisFieldName,
-                                    (void*)inputVolScalarFieldTmp->cdata(), 
-                                    std::vector<size_t>{size_t(mesh.nCells()), 1},
-                                    SRTensorTypeDouble, SRMemLayoutContiguous);
-
-            smartRedisClient.put_dataset(redisDataset);
-            smartRedisClient.append_to_list("redisDatasetList", 
-                                             redisDataset);
-        }
-        // TODO(TM): same as for the volScalarField only with vector dimensions.
-        else if (!inputVolVectorFieldTmp->empty())
-        {
+            const auto& field = inputVolScalarFieldTmp();
+            scalarXrank.insert(scalarXrank.begin() + timeI * field.size(), 
+                               field.begin(), field.end());
         }
     }
 
+    Pout << "Writing Xrank tensor " << tensorName << endl;
+    if (scalarXrank.size())
+    {
+        smartRedisClient.put_tensor(tensorName,
+                                    scalarXrank.data(), 
+                                    std::vector<size_t>{size_t(mesh.nCells()), inputTimeDirs.size()},
+                                    SRTensorTypeDouble, SRMemLayoutContiguous);
+    }
+
+    Pout << "Data size = " << scalarXrank.size() 
+        << " , nCells = " << mesh.nCells() 
+        << " , nTimeSteps = " << inputTimeDirs.size() 
+        << " , nCells * nTimeSteps = " << mesh.nCells() * inputTimeDirs.size() << endl; 
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
     

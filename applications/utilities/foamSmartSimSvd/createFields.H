@@ -47,17 +47,15 @@ IOobject fieldHeader
     runTime,  
     IOobject::MUST_READ
 );
-    
+
 // If the cell centered scalar field is available for reading 
 if (fieldHeader.typeHeaderOk<volScalarField>(true, true, false))
 {
-    Info <<  "Reading input field " <<  fieldHeader.objectPath() << endl;
     inputVolScalarFieldTmp = new volScalarField(fieldHeader, mesh);
 }
 // If the cell centered vector field is available for reading 
 else if (fieldHeader.typeHeaderOk<volVectorField>(true, true, false)) 
 {
-    Info <<  "Reading input field " <<  fieldHeader.objectPath() << endl;
     inputVolVectorFieldTmp = new volVectorField(fieldHeader, mesh);
 }
 

@@ -208,6 +208,24 @@ void Foam::displacementSmartSimMotionSolver::solve()
                               SRTensorTypeDouble, SRMemLayoutContiguous);
         Pout << "Model from time step " << model_index.size() 
             << " " << model_index[0]  << endl;
+
+        // Place internal mesh points from this MPI rank into SmartRedis 
+        auto pointsInput = "pointsInput_" + mpiIndexStr;
+        const auto& points = mesh().points();
+        Pout << "nPoints = " << mesh().nPoints() << endl; 
+        client_.put_tensor(pointsInput,
+                           (void*)points.cdata(), 
+                           std::vector<size_t>{size_t(points.size()), 3},
+                           SRTensorTypeDouble, SRMemLayoutContiguous);
+
+        // Perform the forward inference in SmartRedis
+        //auto pointsOutput = "pointsOutput_" + mpiIndexStr;
+        //Pout << "running model" << endl;
+        //client_.run_model("MLP", {pointsInput}, {pointsOutput});
+
+        //unpack_tensor 
+        //get_tensor.. 
+        //update mesh points... 
     }
 
     // TODO(TM): hardcoded, make it work with runTime.end(). 
