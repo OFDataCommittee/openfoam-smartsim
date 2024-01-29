@@ -9,6 +9,7 @@ The sub-module provides examples for coupling OpenFOAM with SmartSim
     - pre-processing application 
     - function object
     - mesh motion solver
+    - parameter estimation 
 
 ## License
 

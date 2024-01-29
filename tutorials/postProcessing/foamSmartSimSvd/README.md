@@ -12,6 +12,8 @@ foamSmartSimSvd> source ../../../SOURCEME.sh
 The notebooks expect port 8000 to be free on your local machine.
 
 ```
+foamSmartSimSvd/cavity> ./Allrun.pre # Creates the mesh and decomposes the domain
+
 foamSmartSimSvd> jupyter notebook foam-smartsim-svd.ipynb
 # or
 foamSmartSimSvd> jupyter notebook foam-smartsim-svd-db-api.ipynb
@@ -19,6 +21,4 @@ foamSmartSimSvd> jupyter notebook foam-smartsim-svd-db-api.ipynb
 
 Click on `Run->Run all cells`.
 
-The only difference between `foamSmartSimSvd` and `foamSmartSimSvdDBAPI` is that
-the second one uses the standardized SmartRedis database API from [src/smartRedis](/src/smartRedis)
-to interact with SmartRedis while the first one uses the raw SmartRedis API.
+The notebook `foam-smartsim-svd.ipynb` and the corresponding OpenFOAM application `foamSmartSimSvd` use the [standard SmartRedis API](https://www.craylabs.org/docs/smartredis.html), while the notebook `foam-smartsim-svd-db-api.ipynb` and the corresponding application `foamSmartSimSvdDBAPI` use the OpenFOAM-SmartRedis database API from [src/smartRedis](/src/smartRedis) to interact with the SmartRedis database. 
