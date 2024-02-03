@@ -213,7 +213,6 @@ doc/Doxygen/DTAGS
 *.xml
 
 # SmartRedis/smartSim
-smartredis
 *.out
 *.err
 *.dat
