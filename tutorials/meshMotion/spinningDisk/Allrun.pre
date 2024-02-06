@@ -9,12 +9,6 @@ runApplication blockMesh
 
 runApplication decomposePar
 
-#runApplication $(getApplication) 
-
-#runApplication mirrorMesh -overwrite
-
-#runApplication checkMesh -writeAllFields -latestTime
 runApplication checkMesh -writeAllFields 
-
 
 #------------------------------------------------------------------------------

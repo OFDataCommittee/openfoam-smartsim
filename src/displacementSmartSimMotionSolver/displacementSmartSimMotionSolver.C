@@ -102,44 +102,22 @@ void Foam::displacementSmartSimMotionSolver::solve()
     pointDisplacement_.boundaryFieldRef().updateCoeffs();
 
     // Send mesh boundary points and displacements to smartRedis 
-    const auto& boundaryDisplacements = 
-        pointDisplacement().boundaryField();
+    const auto& boundaryDisplacements = pointDisplacement().boundaryField();
     const auto& meshBoundary = mesh().boundaryMesh(); 
 
-    // Time step and MPI rank used for identifying data
-    const auto& runTime = mesh().time();
-    label timeIndex = runTime.timeIndex();
-    auto timeIndexStr = std::to_string(timeIndex);
+    // MPI rank is used for identifying tensors 
     auto mpiIndexStr = std::to_string(Pstream::myProcNo());
 
-    // Write the current time index to SmartRedis
-    //if (Pstream::myProcNo() == 0)
-    //{
-        //std::vector<double> time_index_value {double(timeIndex)};
-        //client_.put_tensor("time_index", time_index_value.data(), {1}, 
-                            //SRTensorTypeDouble, SRMemLayoutContiguous);
-    //}
-
     // Create the boundary points DataSet
-    auto pointsDsetName = "points_dataset_timeStep_" + timeIndexStr +
-        "_MPI_" + mpiIndexStr; 
+    auto pointsDsetName = "points_dataset_MPI_" + mpiIndexStr; 
     SmartRedis::DataSet pointsDataset(pointsDsetName);
     // Create the boundary displacements DataSet
-    auto displDsetName = "displacement_dataset_timeStep_" + timeIndexStr +  
-        "_MPI_" + mpiIndexStr;
+    auto displDsetName = "displacement_dataset_MPI_" + mpiIndexStr;
     SmartRedis::DataSet displacementsDataset(displDsetName);
-
-    // Write the current time index to SmartRedis
-    //if (Pstream::myProcNo() == 0)
-    //{
-        //std::vector<double> time_index_value {double(timeIndex)};
-        //client_.put_tensor("time_index", time_index_value.data(), {1}, 
-                            //SRTensorTypeDouble, SRMemLayoutContiguous);
-    //}
 
     forAll(boundaryDisplacements, patchI)
     {
-        // FIXME(TM): use isA<>, not hardcoded names.
+        // Skip processor and empty Finite Volume patches
         if ((meshBoundary[patchI].type() == "empty") || 
             (meshBoundary[patchI].type() == "processor"))
         {
@@ -151,8 +129,7 @@ void Foam::displacementSmartSimMotionSolver::solve()
         const polyPatch& patch = meshBoundary[patchI];
 
         const pointField& patchPoints = patch.localPoints();
-        const pointPatchVectorField& patchDisplacements = 
-            boundaryDisplacements[patchI];
+        const pointPatchVectorField& patchDisplacements = boundaryDisplacements[patchI];
         vectorField patchDisplacementData = patchDisplacements.patchInternalField(); 
 
         // Point patch addressing is global - the boundary loop on each MPI rank
@@ -172,16 +149,14 @@ void Foam::displacementSmartSimMotionSolver::solve()
              << " to SmartRedis." << endl;
         
         // Add the patch points to the boundary points dataset 
-        auto pointsName = "points_" + patch.name() + 
-            "_timeStep_" + timeIndexStr + "_MPI_" + mpiIndexStr; 
+        auto pointsName = "points_" + patch.name() + "_MPI_" + mpiIndexStr; 
         pointsDataset.add_tensor(pointsName,
                                  (void*)patchPoints.cdata(), 
                                  std::vector<size_t>{size_t(patchPoints.size()), 3},
                                  SRTensorTypeDouble, SRMemLayoutContiguous);
 
         // Add the patch displacements to the boundary displacements dataset 
-        auto displacementsName = "displacements_" + patch.name() +
-            "_timeStep_" + timeIndexStr + "_MPI_" + mpiIndexStr;  
+        auto displacementsName = "displacements_" + patch.name() + "_MPI_" + mpiIndexStr;  
         displacementsDataset.add_tensor(displacementsName,
                                         (void*)patchDisplacementData.cdata(), 
                                         std::vector<size_t>{size_t(patchPoints.size()), 3},
@@ -194,7 +169,7 @@ void Foam::displacementSmartSimMotionSolver::solve()
     client_.append_to_list("pointsDatasetList", pointsDataset);
     client_.append_to_list("displacementsDatasetList", displacementsDataset);
 
-    bool model_updated = client_.poll_key("model_updated", 10, 1000);
+    bool model_updated = client_.poll_key("model_updated", 10, 10000);
     if (! model_updated)
     {
         FatalErrorInFunction
@@ -203,41 +178,72 @@ void Foam::displacementSmartSimMotionSolver::solve()
     }
     else
     {
-        std::vector<double> model_index {1};
-        client_.unpack_tensor("model_updated", model_index.data(), {1},
-                              SRTensorTypeDouble, SRMemLayoutContiguous);
-        Pout << "Model from time step " << model_index.size() 
-            << " " << model_index[0]  << endl;
+        // Send only internal mesh points to SmartRedis for forward inference.
+        // Since mesh.points() is a pointField we can use pointDisplacement_
+        // internal/boundary field addressing. OpenFOAM stores geometric fields
+        // as internal field X = [x0, x1, ..., x_{N_i -1}, x_{N_i}, ...
+        // x_{|X|}] basically storing internal values up to x_{N_i -1}, with
+        // N_i = number of internal values, then appending boundary field as
+        // patches from N_i up to |X|. 
+        
+        auto inputName = "meshPoints_" + mpiIndexStr;
+        const auto& meshPoints = mesh().points();
+        const auto& internalDisplacements = pointDisplacement_.internalField();
+        const size_t nInternalPoints = internalDisplacements.size(); 
 
-        // Place internal mesh points from this MPI rank into SmartRedis 
-        auto pointsInput = "pointsInput_" + mpiIndexStr;
-        const auto& points = mesh().points();
-        Pout << "nPoints = " << mesh().nPoints() << endl; 
-        client_.put_tensor(pointsInput,
-                           (void*)points.cdata(), 
-                           std::vector<size_t>{size_t(points.size()), 3},
-                           SRTensorTypeDouble, SRMemLayoutContiguous);
+        // Extract 2D internal points from 3D OpenFOAM points into a flattened
+        // contiguous std::vector  
+        // [[p00 p01 p02], [p10 p11 p12], ...] ->
+        // [q00 q01 q10 q11 q20 q21 ...]
+        std::vector<double> inputPoints2D(nInternalPoints*2, 0);
+        for(std::size_t pI = 0; pI < nInternalPoints; ++pI)
+        {
+            inputPoints2D[pI*2] = meshPoints[pI][0];
+            inputPoints2D[pI*2+1] = meshPoints[pI][1];
+        }
+        // Send the 2D flattened points to SmartRedis, but as 
+        // [q00 q01 q10 q11 q20 q21 ...] ->
+        // [[q00 q01], [q10 q11], [q20 q21], ...]
+        // This shape is needed for the MLP! 
+        client_.put_tensor(inputName,
+                           (void*)inputPoints2D.data(), 
+                           {nInternalPoints, 2},
+                           SRTensorTypeDouble, 
+                           SRMemLayoutContiguous);
 
         // Perform the forward inference in SmartRedis
-        //auto pointsOutput = "pointsOutput_" + mpiIndexStr;
-        //Pout << "running model" << endl;
-        //client_.run_model("MLP", {pointsInput}, {pointsOutput});
+        auto outputName = "outputDisplacements_" + mpiIndexStr;
+        client_.run_model("MLP", {inputName}, {outputName});
 
-        //unpack_tensor 
-        //get_tensor.. 
-        //update mesh points... 
+        Pout << "nInternalPoints = " << nInternalPoints 
+            << "nMeshPoints = " << mesh().nPoints() << endl;
+        std::vector<double> outputDisplacements2D(nInternalPoints*2, 0);
+        client_.unpack_tensor(outputName, outputDisplacements2D.data(), 
+                              {nInternalPoints*2},
+                              SRTensorTypeDouble, 
+                              SRMemLayoutContiguous);
+
+        for(std::size_t i = 0; i < outputDisplacements2D.size(); ++i)
+        {
+            pointDisplacement_[i / 2][i % 2] = outputDisplacements2D[i];
+        }
     }
 
-    // TODO(TM): hardcoded, make it work with runTime.end(). 
-    if ((Pstream::myProcNo() == 0) && (timeIndex == 3))
+    // At the end of the simulation, have MPI rank 0 notify the python 
+    // client via SmartRedis that the simulation has completed by writing
+    // an end_time_index tensor to SmartRedis. 
+    auto timeIndex = mesh().time().timeIndex();
+    const auto& runTime = mesh().time();
+    if ((Pstream::myProcNo() == 0) && (runTime.timeIndex() == 3))
     {
-        std::vector<double> end_time_vec {double(timeIndex)};
+        std::vector<double> end_time_vec {double(runTime.timeIndex())};
         Info << "Seting end time flag : " << end_time_vec[0] << endl;
         client_.put_tensor("end_time_index", end_time_vec.data(), {1}, 
                             SRTensorTypeDouble, SRMemLayoutContiguous);
     }
 
-    // Emulate MPI_Barrier()
+    // Emulate MPI_Barrier() - wait for all MPI ranks to perform forward
+    // inference of displacements and move the mesh with ML displacements.
     label totalRank = Pstream::myProcNo();
     reduce(totalRank, sumOp<label>(), totalRank);
 
