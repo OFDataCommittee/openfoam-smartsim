@@ -20,31 +20,19 @@ internalField   uniform (0 0 0);
 
 boundaryField
 {
-    inlet
-    {
-        type            fixedValue;
-        value           $internalField;
-    }
-
-    outlet
-    {
-        type            fixedValue;
-        value           $internalField;
-    }
 
     cylinder
     {
         type        solidBodyMotionDisplacement;
-        solidBodyMotionFunction  multiMotion;
+        solidBodyMotionFunction  oscillatingRotatingMotion;
         multiMotionCoeffs
         {
-            solidBodyMotionFunction  linearMotion;
             translation
             {
                 solidBodyMotionFunction  linearMotion;
                 linearMotionCoeffs
                 {
-                    velocity   (0.1 0.05 0);
+                    velocity   (1 0 0);
                 }
             }
             rotation
@@ -54,7 +42,7 @@ boundaryField
                 {
                     origin      (0 0 0);
                     axis        (0 0 1);
-                    omega       0.1; // rad/s, 1rad/s=9.5rpm
+                    omega       1; // rad/s, 1rad/s=9.5rpm
                 }
             }
         }
@@ -62,15 +50,27 @@ boundaryField
         {
             origin      (0 0 0);
             axis        (0 0 1);
-            omega       2;          // rad/s, 1rad/s=9.5rpm
-            amplitude   (0 0 20);    // max amplitude (degrees)
+            omega       1.5;      // rad/s, 1rad/s=9.5rpm
+            amplitude   (0 0 30);    // max amplitude (degrees)
         }
+    }
+
+    inlet
+    {
+        type            fixedValue;
+        value           uniform (0 0 0); 
+    }
+
+    outlet
+    {
+        type            fixedValue;
+        value           uniform (0 0 0); 
     }
 
     walls
     {
         type            fixedValue;
-        value           $internalField;
+        value           uniform (0 0 0); 
     }
 
     frontAndBack

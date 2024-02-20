@@ -22,12 +22,15 @@ startTime       0;
 
 stopAt          endTime;
 
-endTime         0.003;
+endTime         20e-01;
 
-deltaT          0.001;
+deltaT          1e-01;
 
-writeControl    timeStep; //adjustable;
-writeInterval   1; // 0.1;
+//writeControl    adjustable;
+//writeInterval   0.05; 
+
+writeControl    timeStep;
+writeInterval   1; 
 
 purgeWrite      0;
 
@@ -49,6 +52,9 @@ maxCo           0.9;
 
 maxDeltaT       0.1;
 
-libs ("libsmartSimMotionSolvers.so");
+DebugSwitches
+{
+    displacementLaplacian 1;
+}
 
 // ************************************************************************* //
