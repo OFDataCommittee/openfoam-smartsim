@@ -1,0 +1,98 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v1912                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+application     pimpleFoam;
+
+startFrom       startTime;
+
+startTime       0;
+
+stopAt          endTime;
+
+endTime         4.0;
+
+deltaT          1.0e-3;
+
+writeControl    runTime;
+
+writeInterval   0.01;
+
+purgeWrite      1;
+
+writeFormat     binary;
+
+writePrecision  8;
+
+timeFormat      general;
+
+timePrecision   8;
+
+runTimeModifiable false;
+
+functions
+{
+    forces
+    {
+        type            forceCoeffs;
+        libs            (forces);
+        writeControl    timeStep;
+        writeInterval   1;
+        log false;
+
+        patches
+        (
+            cylinder
+        );
+
+        rhoInf      1;
+        rho         rhoInf;
+
+        CofR        (0.2 0.2 0.005);
+        liftDir     (0 1 0);
+        dragDir     (1 0 0);
+        magUInf     1.0;
+        lRef        0.1;
+        Aref        0.001;
+    }
+
+    dataToSmartRedis
+    {
+        type fieldsToSmartRedis;
+        libs ("libsmartredisFunctionObjects.so");
+
+        // Unique name for this function object instance
+        name Udata;
+
+        // SmartRedis client mode
+        clusterMode off;
+
+        // OpenFOAM fields to send to the database
+        fields (U);
+
+        // OpenFOAM patches to send
+        patches (internal);
+
+        // when to start sending data
+        executeControl      writeTime;
+        executeInterval     1;
+        writeControl        writeTime;
+        writeInterval       1;
+        timeStart 0.0;
+    }
+}
+
+// ************************************************************************* //

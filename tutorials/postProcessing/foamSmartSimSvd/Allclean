@@ -1,0 +1,2 @@
+rm -rf *.out *.err smartsim_db.dat partitioned-svd-cylinder
+./cylinder2D/Allclean

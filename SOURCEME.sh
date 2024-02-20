@@ -29,5 +29,6 @@ wmake libso src/displacementSmartSimMotionSolver
 ## Compile OpenFOAM utilities
 wmake applications/utilities/foamSmartSimSvd
 wmake applications/utilities/foamSmartSimSvdDBAPI
+wmake applications/utilities/svdToFoam
 
 cd "$orig_dir" || exit 1
