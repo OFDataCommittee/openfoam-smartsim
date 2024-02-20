@@ -33,7 +33,7 @@ License
 #include "mapPolyMesh.H"
 #include "fvPatch.H"
 #include "fixedValuePointPatchFields.H"
-//#include "mpi.h"
+//#include "motionInterpolation.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -65,6 +65,27 @@ Foam::displacementSmartSimMotionSolver::displacementSmartSimMotionSolver
 )
 :
     displacementMotionSolver(mesh, dict, typeName),
+    fvMotionSolver(mesh),
+    //cellDisplacement_
+    //(
+        //IOobject
+        //(
+            //"cellDisplacement",
+            //mesh.time().timeName(),
+            //mesh,
+            //IOobject::READ_IF_PRESENT,
+            //IOobject::AUTO_WRITE
+        //),
+        //fvMesh_,
+        //dimensionedVector(pointDisplacement_.dimensions(), Zero),
+        //cellMotionBoundaryTypes<vector>(pointDisplacement_.boundaryField())
+    //),
+    //interpolationPtr_
+    //(
+        //coeffDict().found("interpolation")
+      //? motionInterpolation::New(fvMesh_, coeffDict().lookup("interpolation"))
+      //: motionInterpolation::New(fvMesh_)
+    //),
     clusterMode_(this->coeffDict().get<bool>("clusterMode")), 
     client_(clusterMode_)
 {}
@@ -79,6 +100,27 @@ displacementSmartSimMotionSolver
 )
 :
     displacementMotionSolver(mesh, dict, pointDisplacement, points0, typeName),
+    fvMotionSolver(mesh),
+    //cellDisplacement_
+    //(
+        //IOobject
+        //(
+            //"cellDisplacement",
+            //mesh.time().timeName(),
+            //mesh,
+            //IOobject::READ_IF_PRESENT,
+            //IOobject::AUTO_WRITE
+        //),
+        //fvMesh_,
+        //dimensionedVector(pointDisplacement_.dimensions(), Zero),
+        //cellMotionBoundaryTypes<vector>(pointDisplacement_.boundaryField())
+    //),
+    //interpolationPtr_
+    //(
+        //coeffDict().found("interpolation")
+      //? motionInterpolation::New(fvMesh_, coeffDict().lookup("interpolation"))
+      //: motionInterpolation::New(fvMesh_)
+    //),
     clusterMode_(dict.getOrDefault<bool>("clusterMode", true)),
     client_(clusterMode_)
 {}
@@ -93,17 +135,30 @@ Foam::displacementSmartSimMotionSolver::
 
 Foam::tmp<Foam::pointField> Foam::displacementSmartSimMotionSolver::curPoints() const
 {
-    return mesh().points() + pointDisplacement(); 
+    //interpolationPtr_->interpolate
+    //(
+        //cellDisplacement_,
+        //pointDisplacement_
+    //);
+
+    tmp<pointField> tcurPoints
+    (
+        points0() + pointDisplacement_.primitiveField()
+    );
+    pointField& curPoints = tcurPoints.ref();
+    twoDCorrectPoints(curPoints);
+
+    return tcurPoints;
 }
 
-void Foam::displacementSmartSimMotionSolver::solve()
+void Foam::displacementSmartSimMotionSolver::solve() 
 {
-    // Apply boundary conditions to point displacements.    
-    pointDisplacement_.boundaryFieldRef().updateCoeffs();
+    // The points have moved so before interpolation update
+    pointDisplacement_.boundaryFieldRef().evaluate();
 
     // Send mesh boundary points and displacements to smartRedis 
     const auto& boundaryDisplacements = pointDisplacement().boundaryField();
-    const auto& meshBoundary = mesh().boundaryMesh(); 
+    const auto& meshBoundary = motionSolver::mesh().boundaryMesh(); 
 
     // MPI rank is used for identifying tensors 
     auto mpiIndexStr = std::to_string(Pstream::myProcNo());
@@ -129,8 +184,10 @@ void Foam::displacementSmartSimMotionSolver::solve()
         const polyPatch& patch = meshBoundary[patchI];
 
         const pointField& patchPoints = patch.localPoints();
-        const pointPatchVectorField& patchDisplacements = boundaryDisplacements[patchI];
-        vectorField patchDisplacementData = patchDisplacements.patchInternalField(); 
+        const pointPatchVectorField& patchDisplacements = 
+		boundaryDisplacements[patchI];
+        vectorField patchDisplacementData = 
+		patchDisplacements.patchInternalField(); 
 
         // Point patch addressing is global - the boundary loop on each MPI rank
         // sees all patches, and those not available in this MPI rank will have 
@@ -187,9 +244,8 @@ void Foam::displacementSmartSimMotionSolver::solve()
         // patches from N_i up to |X|. 
         
         auto inputName = "meshPoints_" + mpiIndexStr;
-        const auto& meshPoints = mesh().points();
-        const auto& internalDisplacements = pointDisplacement_.internalField();
-        const size_t nInternalPoints = internalDisplacements.size(); 
+        const auto& meshPoints = fvMesh_.points();
+        const size_t nInternalPoints = pointDisplacement_.size(); 
 
         // Extract 2D internal points from 3D OpenFOAM points into a flattened
         // contiguous std::vector  
@@ -207,7 +263,7 @@ void Foam::displacementSmartSimMotionSolver::solve()
         // This shape is needed for the MLP! 
         client_.put_tensor(inputName,
                            (void*)inputPoints2D.data(), 
-                           {nInternalPoints, 2},
+                           {nInternalPoints,2},
                            SRTensorTypeDouble, 
                            SRMemLayoutContiguous);
 
@@ -215,26 +271,33 @@ void Foam::displacementSmartSimMotionSolver::solve()
         auto outputName = "outputDisplacements_" + mpiIndexStr;
         client_.run_model("MLP", {inputName}, {outputName});
 
-        Pout << "nInternalPoints = " << nInternalPoints 
-            << "nMeshPoints = " << mesh().nPoints() << endl;
         std::vector<double> outputDisplacements2D(nInternalPoints*2, 0);
         client_.unpack_tensor(outputName, outputDisplacements2D.data(), 
                               {nInternalPoints*2},
                               SRTensorTypeDouble, 
                               SRMemLayoutContiguous);
 
+
+        // Evaluate boundary and internal displacements froom the ML model.
+        pointVectorField newDisplacements ("newDisplacements", 
+                                            pointDisplacement_);
         for(std::size_t i = 0; i < outputDisplacements2D.size(); ++i)
         {
-            pointDisplacement_[i / 2][i % 2] = outputDisplacements2D[i];
+            newDisplacements[i / 2][i % 2] = outputDisplacements2D[i];
         }
+        newDisplacements.boundaryFieldRef().evaluate(); 
+        pointDisplacement_.internalFieldRef() = newDisplacements.internalField(); 
+        pointDisplacement_.boundaryFieldRef().evaluate(); 
+        // TODO: debugging 
+        newDisplacements.write();
+        // - 
     }
 
     // At the end of the simulation, have MPI rank 0 notify the python 
     // client via SmartRedis that the simulation has completed by writing
     // an end_time_index tensor to SmartRedis. 
-    auto timeIndex = mesh().time().timeIndex();
-    const auto& runTime = mesh().time();
-    if ((Pstream::myProcNo() == 0) && (runTime.timeIndex() == 3))
+    const auto& runTime = fvMesh_.time();
+    if ((Pstream::myProcNo() == 0) && (runTime.timeIndex() == 20))
     {
         std::vector<double> end_time_vec {double(runTime.timeIndex())};
         Info << "Seting end time flag : " << end_time_vec[0] << endl;
@@ -252,6 +315,7 @@ void Foam::displacementSmartSimMotionSolver::solve()
     {
         client_.delete_tensor("model_updated");
     }
+
 }
 
 // ************************************************************************* //

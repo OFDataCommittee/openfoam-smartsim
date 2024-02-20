@@ -43,16 +43,14 @@ SourceFiles
 #define displacementSmartSimMotionSolver_H
 
 #include "displacementMotionSolver.H"
+#include "displacementLaplacianFvMotionSolver.H"
 #include "client.h"
+#include "mapPolyMesh.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
-
-// Forward class declarations
-class motionInterpolation;
-class motionDiffusivity;
 
 /*---------------------------------------------------------------------------*\
              Class displacementSmartSimMotionSolver Declaration
@@ -60,10 +58,14 @@ class motionDiffusivity;
 
 class displacementSmartSimMotionSolver
 :
-    public displacementMotionSolver
+    public displacementMotionSolver,
+    public fvMotionSolver
 {
 
     // Private Member Functions
+
+        ////- Interpolation used to transfer cell displacement to the points
+        //autoPtr<motionInterpolation> interpolationPtr_;
     
         //- Set to false if not using a clustered database 
         bool clusterMode_;
@@ -115,6 +117,7 @@ public:
 
     //- Solve for motion
     virtual void solve(); 
+
 };
 
 
