@@ -250,6 +250,21 @@ Foam::smartRedisClient::sendGeometricFields
     client().put_dataset(ds);
 }
 
+Foam::smartRedisClient::sendSurfaceFieldValues(
+)
+{
+    updateNamingConventionState();
+    word dsName = extractName("dataset", namingConventionState_);
+    DataSet ds(dsName);
+    forAll(objectResultEntries, resultID)
+    {
+        //TODO: Figure out how to pack this into a single element array
+        auto result = getResult(resultID)
+        ds.add_meta_scalar("resultID", result.result())
+    }
+    client().put_dataset(ds);
+}
+
 void
 Foam::smartRedisClient::getGeometricFields
 (

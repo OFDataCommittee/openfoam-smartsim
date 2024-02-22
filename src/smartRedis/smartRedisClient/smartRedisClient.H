@@ -60,7 +60,7 @@ class smartRedisClient
 protected:
 
     // Protected Data
-        
+
         //- Database name
         word name_;
 
@@ -83,9 +83,9 @@ protected:
         dictionary namingConventionState_;
 
     // Protected Member Functions
-        
+
         //- Post metadata dataset to DB
-        //  Currently, this has to be called in dervied constructors if 
+        //  Currently, this has to be called in dervied constructors if
         //  they introduce new Jinja2 naming
         dictionary postMetadata();
 
@@ -117,7 +117,7 @@ protected:
             const wordList& fieldNames,
             const wordList& patchNames = wordList{"internal"}
         );
-        
+
         //- get all fields in the list
         template<class... Types>
         void getAllFields
@@ -126,7 +126,7 @@ protected:
             const wordList& fieldNames,
             const wordList& patchNames = wordList{"internal"}
         );
-        
+
         //- No copy construct
         smartRedisClient(const smartRedisClient&) = delete;
 
@@ -236,6 +236,13 @@ public:
 
         //- Send a set of OpenFOAM fields of any type as SmartRedis tensors
         void sendGeometricFields
+        (
+            const wordList& fieldNames,
+            const wordList& patchNames = wordList{"internal"}
+        );
+
+        //- Send a set of OpenFOAM fields of any type as SmartRedis tensors
+        void sendSurfaceFieldValues
         (
             const wordList& fieldNames,
             const wordList& patchNames = wordList{"internal"}

@@ -1,3 +1,4 @@
 fieldsToSmartRedisFunctionObject/fieldsToSmartRedisFunctionObject.C
+surfaceFieldValuetoSmartRedis/fieldsToSmartRedisFunctionObject.C
 
 LIB = $(FOAM_USER_LIBBIN)/libsmartredisFunctionObjects
