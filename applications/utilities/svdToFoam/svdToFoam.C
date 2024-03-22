@@ -143,7 +143,7 @@ int main(int argc, char *argv[])
         if (!isRunning)
         {
             auto modeBaseName = "rec_ensemble_" + mpiRank + ".global_U_mpi_rank_" + mpiRank;
-            for (size_t r=0; r < std::stoi(svdRank); r++)
+            for (int r=0; r < std::stoi(svdRank); r++)
             {
 
                 auto tensorName = modeBaseName + "_mode_" + std::to_string(r);

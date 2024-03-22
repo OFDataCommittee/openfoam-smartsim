@@ -186,8 +186,9 @@ void Foam::displacementSmartSimMotionSolver::solve()
         const pointField& patchPoints = patch.localPoints();
         const pointPatchVectorField& patchDisplacements = 
 		boundaryDisplacements[patchI];
-        vectorField patchDisplacementData = 
+        tmp<vectorField> patchDisplacementDataTmp =
 		patchDisplacements.patchInternalField(); 
+	const vectorField& patchDisplacementData = patchDisplacementDataTmp();
 
         // Point patch addressing is global - the boundary loop on each MPI rank
         // sees all patches, and those not available in this MPI rank will have 
