@@ -12,8 +12,6 @@ meshMotion> source ../../SOURCEME.sh
 The notebook expects port 8000 to be free on your local machine.
 
 ```
-meshMotion> cd spinningDisk 
-spinningDisk> ./Allrun.pre && cd .. 
 meshMotion> jupyter notebook openfoam-smartsim-mesh-motion.ipynb
 ```
 
