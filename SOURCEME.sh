@@ -21,6 +21,7 @@ export SMARTREDIS_LIB=$FOAM_SMARTREDIS/install/lib
 export LD_LIBRARY_PATH=$SMARTREDIS_LIB:$LD_LIBRARY_PATH
 export FOAM_CODE_TEMPLATES=$_REPO_ROOT/etc/dynamicCode/
 
+
 ## Compile OpenFOAM libs
 wmake libso src/smartRedis
 wmake libso src/functionObjects

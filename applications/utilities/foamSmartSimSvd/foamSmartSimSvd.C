@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
     {
         smartRedisClient.put_tensor(tensorName,
                                     scalarXrank.data(), 
-                                    std::vector<size_t>{size_t(mesh.nCells()), inputTimeDirs.size()},
+                                    std::vector<size_t>{size_t(mesh.nCells()), size_t(inputTimeDirs.size())},
                                     SRTensorTypeDouble, SRMemLayoutContiguous);
     }
 

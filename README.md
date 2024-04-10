@@ -20,9 +20,17 @@ The source code license: GPL-3.0-or-later
 1. [OpenFOAM-v2312] or newer, or a recent [development version][OpenFOAM-git]
    from [OpenFOAM.com][OpenFOAM]. 
 2. [SmartSim] 0.6.0 
-2. [SmartRedis] N.N.N 
+3. [SmartRedis] N.N.N 
+4. [PyFoam,pandas,matplotlib]: pip install PyFoam pandas matplotlib
 
 ## Building
+
+### Tested compilers 
+
+* `WM_COMPILER=Gcc` , compilers: g++ 11.4.0
+* `WM_COMPILER=Icx`, compilers: Intel(R) oneAPI DPC++/C++ Compiler 2023.2.4
+
+### Build script 
 
 The OpenFOAM-SmartSim coupling functions over a connection that OpenFOAM as a client maintains with the SmartRedis database. This means that OpenFOAM elements (application, solver, function object, boundary condition, etc.) must be able to include SmartRedis source folders and link with a SmartRedis library. To facilitate this, a Bash script is provided:
 

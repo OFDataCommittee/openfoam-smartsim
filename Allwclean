@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+if [ -d smartredis ]; 
+then 
+    make clean --directory=smartredis
+fi
+wclean all src 
+wclean all applications
