@@ -66,26 +66,6 @@ Foam::displacementSmartSimMotionSolver::displacementSmartSimMotionSolver
 :
     displacementMotionSolver(mesh, dict, typeName),
     fvMotionSolver(mesh),
-    //cellDisplacement_
-    //(
-        //IOobject
-        //(
-            //"cellDisplacement",
-            //mesh.time().timeName(),
-            //mesh,
-            //IOobject::READ_IF_PRESENT,
-            //IOobject::AUTO_WRITE
-        //),
-        //fvMesh_,
-        //dimensionedVector(pointDisplacement_.dimensions(), Zero),
-        //cellMotionBoundaryTypes<vector>(pointDisplacement_.boundaryField())
-    //),
-    //interpolationPtr_
-    //(
-        //coeffDict().found("interpolation")
-      //? motionInterpolation::New(fvMesh_, coeffDict().lookup("interpolation"))
-      //: motionInterpolation::New(fvMesh_)
-    //),
     clusterMode_(this->coeffDict().get<bool>("clusterMode")), 
     client_(clusterMode_)
 {}
@@ -101,26 +81,6 @@ displacementSmartSimMotionSolver
 :
     displacementMotionSolver(mesh, dict, pointDisplacement, points0, typeName),
     fvMotionSolver(mesh),
-    //cellDisplacement_
-    //(
-        //IOobject
-        //(
-            //"cellDisplacement",
-            //mesh.time().timeName(),
-            //mesh,
-            //IOobject::READ_IF_PRESENT,
-            //IOobject::AUTO_WRITE
-        //),
-        //fvMesh_,
-        //dimensionedVector(pointDisplacement_.dimensions(), Zero),
-        //cellMotionBoundaryTypes<vector>(pointDisplacement_.boundaryField())
-    //),
-    //interpolationPtr_
-    //(
-        //coeffDict().found("interpolation")
-      //? motionInterpolation::New(fvMesh_, coeffDict().lookup("interpolation"))
-      //: motionInterpolation::New(fvMesh_)
-    //),
     clusterMode_(dict.getOrDefault<bool>("clusterMode", true)),
     client_(clusterMode_)
 {}
@@ -135,12 +95,6 @@ Foam::displacementSmartSimMotionSolver::
 
 Foam::tmp<Foam::pointField> Foam::displacementSmartSimMotionSolver::curPoints() const
 {
-    //interpolationPtr_->interpolate
-    //(
-        //cellDisplacement_,
-        //pointDisplacement_
-    //);
-
     tmp<pointField> tcurPoints
     (
         points0() + pointDisplacement_.primitiveField()
@@ -176,8 +130,8 @@ void Foam::displacementSmartSimMotionSolver::solve()
         if ((meshBoundary[patchI].type() == "empty") || 
             (meshBoundary[patchI].type() == "processor"))
         {
-            Pout << "Skipping " << meshBoundary[patchI].name() << ", "
-                << meshBoundary[patchI].type() << endl;
+            //Pout << "Skipping " << meshBoundary[patchI].name() << ", "
+            //    << meshBoundary[patchI].type() << endl;
             continue;
         }
         
@@ -195,16 +149,16 @@ void Foam::displacementSmartSimMotionSolver::solve()
         // size 0. Size 0 data cannot be written into the SmartRedis database.
         if (patch.size() == 0)
         {
-            Pout << "Skipping " << patch.name() << " with points size "
-                << patchPoints.size() << " and displacements size " 
-                << patchDisplacementData.size() << endl;
+            //Pout << "Skipping " << patch.name() << " with points size "
+            //    << patchPoints.size() << " and displacements size " 
+            //    << patchDisplacementData.size() << endl;
             continue;
         }
     
-        Pout << "Sending " << patch.name() 
-             << "points size " << patchPoints.size() << endl
-             << " displacements size " << patchDisplacementData.size() << endl
-             << " to SmartRedis." << endl;
+        //Pout << "Sending " << patch.name() 
+        //     << "points size " << patchPoints.size() << endl
+        //     << " displacements size " << patchDisplacementData.size() << endl
+        //     << " to SmartRedis." << endl;
         
         // Add the patch points to the boundary points dataset 
         auto pointsName = "points_" + patch.name() + "_MPI_" + mpiIndexStr; 

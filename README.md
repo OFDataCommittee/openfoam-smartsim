@@ -20,7 +20,8 @@ The source code license: GPL-3.0-or-later
 1. [OpenFOAM-v2312] or newer, or a recent [development version][OpenFOAM-git]
    from [OpenFOAM.com][OpenFOAM]. 
 2. [SmartSim] 0.6.0 
-2. [SmartRedis] N.N.N 
+3. [SmartRedis] N.N.N 
+4. [PyFoam,pandas,matplotlib]: pip install PyFoam pandas matplotlib
 
 ## Building
 
