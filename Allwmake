@@ -14,13 +14,24 @@ else
     cd "${_REPO_ROOT}" || exit 1
 fi
 cd "${FOAM_SMARTREDIS}" || exit 1
+
+# Force clean: ensures binaries match OpenFOAM's compiler. 
+make clean 
+
+# Set compiler options 
+if [ $WM_COMPILER ==  "Gcc" ]; then
+    echo "Using gcc and g++" 
+    export CC=gcc
+    export CXX=g++
+elif [ $WM_COMPILER == "Icx" ]; then
+    echo "Using icpx"
+    export CC=icx-cc
+    export CXX=icpx
+fi
 make lib
 cd "$_REPO_ROOT" || exit 1
-export SMARTREDIS_INCLUDE=$FOAM_SMARTREDIS/install/include
-export SMARTREDIS_LIB=$FOAM_SMARTREDIS/install/lib
-export LD_LIBRARY_PATH=$SMARTREDIS_LIB:$LD_LIBRARY_PATH
+cp -r $FOAM_SMARTREDIS/install/lib/*.* $FOAM_USER_LIBBIN 
 export FOAM_CODE_TEMPLATES=$_REPO_ROOT/etc/dynamicCode/
-
 
 ## Compile OpenFOAM libs
 wmake libso src/smartRedis
@@ -28,8 +39,6 @@ wmake libso src/functionObjects
 wmake libso src/displacementSmartSimMotionSolver
 
 ## Compile OpenFOAM utilities
-wmake applications/utilities/foamSmartSimSvd
-wmake applications/utilities/foamSmartSimSvdDBAPI
-wmake applications/utilities/svdToFoam
+wmake all applications 
 
 cd "$orig_dir" || exit 1

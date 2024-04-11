@@ -6,7 +6,7 @@ EXE_INC = -std=c++17 -Wno-old-style-cast -Wno-non-virtual-dtor \
     -I$(LIB_SRC)/dynamicMesh/lnInclude \
     -I$(LIB_SRC)/functionObjects/forces/lnInclude \
     -I$(LIB_SRC)/fvMotionSolver/lnInclude \
-    -I$(SMARTREDIS_INCLUDE)
+    -I../../smartredis/install/include
 
 LIB_LIBS = \
     -lfiniteVolume \
@@ -16,7 +16,5 @@ LIB_LIBS = \
     -lmeshTools \
     -ldynamicMesh \
     -lfvMotionSolvers \
-    -L$(SMARTREDIS_LIB) -lhiredis -lredis++ \
-    -lsmartredis
-
+    -L$(FOAM_USER_LIBBIN) -lhiredis -lredis++ -lsmartredis
     /* -lforces include in controlDict if needed */

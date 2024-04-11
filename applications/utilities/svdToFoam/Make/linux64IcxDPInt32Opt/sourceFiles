@@ -1,0 +1,4 @@
+SOURCE = \
+svdToFoam.C \
+
+# sources
