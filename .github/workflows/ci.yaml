@@ -48,12 +48,12 @@ jobs:
         run: |
           source /usr/lib/openfoam/openfoam2312/etc/bashrc
           mkdir -p $FOAM_USER_LIBBIN
-          source SOURCEME.sh
+          ./Allwmake 
 
       - name: Compile Tests and Run
         run: |
           source /usr/lib/openfoam/openfoam2312/etc/bashrc
-          source SOURCEME.sh
+          ./Allwmake 
           export SSDB="redis:6379"
           git clone https://github.com/FoamScience/foamUT $FOAM_FOAMUT
           sed -i 's/mpirun/mpirun --oversubscribe/g' $FOAM_FOAMUT/Alltest
