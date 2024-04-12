@@ -32,7 +32,7 @@ The source code license: GPL-3.0-or-later
 
 ### Compiling and installation 
 
-The OpenFOAM-SmartSim coupling functions over a connection that OpenFOAM as a client maintains with the SmartRedis database. This means that OpenFOAM elements (application, solver, function object, boundary condition, etc.) must be able to include SmartRedis source folders and link with a SmartRedis library. To facilitate this, an `./Allrun` Bash script is provided. 
+The OpenFOAM-SmartSim coupling functions over a connection that OpenFOAM as a client maintains with the SmartRedis database. This means that OpenFOAM elements (application, solver, function object, boundary condition, etc.) must be able to include SmartRedis source folders and link with a SmartRedis library. To facilitate this, an `./Allwmake` Bash script is provided. 
 
 To build the project, you need to have a working OpenFOAM environment: 
 
