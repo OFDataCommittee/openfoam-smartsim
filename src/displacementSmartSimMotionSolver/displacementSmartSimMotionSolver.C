@@ -130,6 +130,7 @@ void Foam::displacementSmartSimMotionSolver::solve()
         if ((meshBoundary[patchI].type() == "empty") || 
             (meshBoundary[patchI].type() == "processor"))
         {
+            // DEBUG INFO
             //Pout << "Skipping " << meshBoundary[patchI].name() << ", "
             //    << meshBoundary[patchI].type() << endl;
             continue;
@@ -149,12 +150,14 @@ void Foam::displacementSmartSimMotionSolver::solve()
         // size 0. Size 0 data cannot be written into the SmartRedis database.
         if (patch.size() == 0)
         {
+	    // DEBUG INFO
             //Pout << "Skipping " << patch.name() << " with points size "
             //    << patchPoints.size() << " and displacements size " 
             //    << patchDisplacementData.size() << endl;
             continue;
         }
     
+        // DEBUG INFO
         //Pout << "Sending " << patch.name() 
         //     << "points size " << patchPoints.size() << endl
         //     << " displacements size " << patchDisplacementData.size() << endl
@@ -243,16 +246,14 @@ void Foam::displacementSmartSimMotionSolver::solve()
         newDisplacements.boundaryFieldRef().evaluate(); 
         pointDisplacement_.internalFieldRef() = newDisplacements.internalField(); 
         pointDisplacement_.boundaryFieldRef().evaluate(); 
-        // TODO: debugging 
-        newDisplacements.write();
-        // - 
     }
 
     // At the end of the simulation, have MPI rank 0 notify the python 
     // client via SmartRedis that the simulation has completed by writing
     // an end_time_index tensor to SmartRedis. 
     const auto& runTime = fvMesh_.time();
-    if ((Pstream::myProcNo() == 0) && (runTime.timeIndex() == 20))
+    if ((Pstream::myProcNo() == 0) &&  
+        (runTime.timeOutputValue() >= runTime.endTime().value()))
     {
         std::vector<double> end_time_vec {double(runTime.timeIndex())};
         Info << "Seting end time flag : " << end_time_vec[0] << endl;
