@@ -199,9 +199,9 @@ try:
                 displ_pred_val = model(points_val)
                 mse_loss_val = loss_func(displ_pred_val, displ_val)
                 rmse_loss_val = torch.sqrt(mse_loss_val)
-                print (f"RMSE {rmse_loss_val}")
                 validation_rmse.append(rmse_loss_val)
 
+        print (f"RMSE {validation_rmse[-1]}")
         # Uncomment to visualize validation RMSE
         # plt.loglog()
         # plt.title("Validation loss RMSE")
