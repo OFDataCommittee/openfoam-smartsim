@@ -4,7 +4,7 @@
 ####---------------------------------------------------------------------------
 ### Set the account from which HPC resources are used. For now, this is
 ### fixed for our project.
-#SBATCH -A special00005
+#SBATCH -A special00004
 ### Set a name identifying the job
 #SBATCH -J wingMotion 
 ### Do not send email notifcations, check job status with 'squeue`

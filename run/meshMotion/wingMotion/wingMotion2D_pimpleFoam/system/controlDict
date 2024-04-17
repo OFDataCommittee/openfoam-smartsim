@@ -22,15 +22,15 @@ startTime       0;
 
 stopAt          endTime;
 
-//endTime         0.1;
-endTime         1e-2; // For debugging
+endTime         0.1;
+//endTime         1e-2; // For debugging
 
 deltaT          1e-5;
 
 writeControl    adjustable;
 
-//writeInterval   1e-2;
-writeInterval   1e-03; // For debugging
+writeInterval   0.5e-2;
+//writeInterval   1e-03; // For debugging
 
 purgeWrite      0;
 
