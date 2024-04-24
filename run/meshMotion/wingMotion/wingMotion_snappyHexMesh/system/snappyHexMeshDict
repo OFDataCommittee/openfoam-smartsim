@@ -71,7 +71,7 @@ castellatedMeshControls
     // Number of buffer layers between different levels.
     // 1 means normal 2:1 refinement restriction, larger means slower
     // refinement.
-    nCellsBetweenLevels 6;
+    nCellsBetweenLevels 8;
 
 
 
@@ -182,7 +182,7 @@ addLayersControls
     {
         wing
         {
-            nSurfaceLayers 3;
+            nSurfaceLayers 4;
         }
     }
 
@@ -211,7 +211,7 @@ addLayersControls
 
     // When not to extrude surface. 0 is flat surface, 90 is when two faces
     // are perpendicular
-    featureAngle 60;
+    featureAngle 170;
 
     // Maximum number of snapping relaxation iterations. Should stop
     // before upon reaching a correct mesh.
