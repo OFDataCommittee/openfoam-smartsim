@@ -15,17 +15,32 @@ import time
 # For calling pre-processing scripts
 import subprocess
 
-exp = Experiment("mesh-motion", launcher="slurm")
+# SLURM CLUSTER
+# exp = Experiment("mesh-motion", launcher="slurm") 
 
+# LOCAL RUN
+exp = Experiment("mesh-motion", launcher="local") 
+
+# SLURM CLUSTER
+#db = exp.create_database(port=8000,       # database port
+#                         interface="bond0")  # cluster's high-speed interconnect 
+
+# LOCAL RUN
 db = exp.create_database(port=8000,       # database port
-                         interface="bond0")  # network interface to use
+                         interface="lo")  # local network  
+
 exp.generate(db, overwrite=True)
 exp.start(db)
 print(f"Database started at: {db.get_address()}")
 
 num_mpi_ranks = 4 
 
-of_rs = exp.create_run_settings(exe="pimpleFoam", exe_args="-parallel")
+# SLURM CLUSTER
+# of_rs = exp.create_run_settings(exe="pimpleFoam", exe_args="-parallel")
+# LOCAL RUN
+of_rs = exp.create_run_settings(exe="pimpleFoam", exe_args="-parallel", 
+                                run_command="mpirun", 
+                                run_args={"np": f"{num_mpi_ranks}"})
 of_rs.set_tasks(num_mpi_ranks)
 of_rs.set_nodes(1)
 of_model = exp.create_model(name="of_model", run_settings=of_rs)
