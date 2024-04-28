@@ -1,0 +1,27 @@
+#!/bin/sh
+cd "${0%/*}" || exit                                # Run from this directory
+. ${WM_PROJECT_DIR:?}/bin/tools/RunFunctions        # Tutorial run functions
+#------------------------------------------------------------------------------
+
+./Allrun.pre
+
+
+# Use the constant/dynamicMesh.laplace settings and run the solver locally
+(
+    cd wingMotion2D_pimpleFoam || exit
+    
+    # Set mesh motion settings to Laplace mesh motion
+    cp constant/dynamicMeshDict.LaplaceMeshMotion constant/dynamicMeshDict
+
+    runParallel $(getApplication)
+
+    # Reset mesh motion settings 
+    git checkout constant/dynamicMeshDict 
+
+    cd ..
+
+    # Copy data for comparison
+    cp -r wingMotion2D_pimpleFoam wingMotion2D_pimpleFoam_LaplaceMeshMotion
+)
+
+#------------------------------------------------------------------------------

@@ -40,7 +40,7 @@ num_mpi_ranks = 4
 # LOCAL RUN
 of_rs = exp.create_run_settings(exe="pimpleFoam", exe_args="-parallel", 
                                 run_command="mpirun", 
-                                run_args={"np": f"{num_mpi_ranks}"})
+                                run_args={"n": f"{num_mpi_ranks}"})
 of_rs.set_tasks(num_mpi_ranks)
 of_rs.set_nodes(1)
 of_model = exp.create_model(name="of_model", run_settings=of_rs)

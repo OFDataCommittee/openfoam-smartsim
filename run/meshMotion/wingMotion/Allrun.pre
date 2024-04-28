@@ -50,10 +50,7 @@ cd "${0%/*}" || exit                                # Run from this directory
 
     runApplication decomposePar
 
-    # Not needed for OpenFOAM+SmartSim, used for displacementLaplacian mesh motion solver. 
-    #runParallel $(getApplication)
-
-    #runApplication reconstructPar
+    cd ..
 )
 
 #------------------------------------------------------------------------------
