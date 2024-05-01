@@ -77,4 +77,4 @@ Head to one of the tutorials, and run the jupyter notebook or a python program y
 
 ## References
 
-Maric, T., Fadeli, M. E., Rigazzi, A., Shao, A., & Weiner, A. (2024). Combining Machine Learning with Computational Fluid Dynamics using OpenFOAM and SmartSim. arXiv preprint [arXiv:2402.16196](https://doi.org/10.48550/arXiv.2402.16196).
+Maric, T., Fadeli, M. E., Rigazzi, A., Shao, A., & Weiner, A. (2024). Combining Machine Learning with Computational Fluid Dynamics using OpenFOAM and SmartSim. arXiv preprint [https://doi.org/10.1007/s11012-024-01797-z](https://doi.org/10.1007/s11012-024-01797-z).
