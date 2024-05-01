@@ -44,7 +44,7 @@ def train(num_mpi_ranks):
     torch.set_default_dtype(torch.float64)
     
     # Initialize the model
-    model = MLP(num_layers=3, layer_width=50, input_size=2, output_size=2, activation_fn=torch.nn.Sigmoid())
+    model = MLP(num_layers=3, layer_width=50, input_size=2, output_size=2, activation_fn=torch.nn.ReLU())
 
     # Initialize the optimizer
     learning_rate = 1e-03
