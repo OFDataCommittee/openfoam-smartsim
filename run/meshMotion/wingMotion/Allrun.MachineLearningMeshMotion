@@ -14,7 +14,7 @@ echo Use the constant/dynamicMesh.laplace settings and run the solver locally
 (
     cd wingMotion2D_pimpleFoam || exit
     
-    echo Set mesh motion settings to Laplace mesh motion
+    echo Set mesh motion settings to MachineLearning mesh motion
     cp constant/dynamicMeshDict.MachineLearningMeshMotion constant/dynamicMeshDict
 
     cd ..
