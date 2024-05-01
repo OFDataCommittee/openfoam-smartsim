@@ -9,23 +9,30 @@ cd "${0%/*}" || exit                                # Run from this directory
 
 rm -rf mesh-motion_Laplace
 
-# Use the constant/dynamicMesh.laplace settings and run the solver locally
+echo Use the constant/dynamicMesh.laplace settings and run the solver locally
 (
     cd wingMotion2D_pimpleFoam || exit
     
-    # Set mesh motion settings to Laplace mesh motion
+    echo Set mesh motion settings to Laplace mesh motion
     cp constant/dynamicMeshDict.LaplaceMeshMotion constant/dynamicMeshDict
 
     runParallel $(getApplication)
 
     cd ..
 
-    # Copy data for comparison
+    echo Copy data for comparison
     cp -r wingMotion2D_pimpleFoam mesh-motion_Laplace
 
-    # Reset mesh motion settings 
+    echo Reset mesh motion settings 
     git checkout wingMotion2D_pimpleFoam/constant/dynamicMeshDict 
 
+    echo Create .foam file visualization in ParaView
+    touch mesh-motion_Laplace/laplace.foam
+
+    echo Generate mesh quality metrics
+    mpirun -np 4 checkMesh \
+            -case mesh-motion_Laplace \
+            -writeFields '(nonOrthoAngle skewness)' -parallel
 )
 
 #------------------------------------------------------------------------------

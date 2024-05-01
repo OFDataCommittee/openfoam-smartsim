@@ -27,6 +27,14 @@ echo Use the constant/dynamicMesh.laplace settings and run the solver locally
 
     echo Reset mesh motion settings 
     git checkout wingMotion2D_pimpleFoam/constant/dynamicMeshDict 
+
+    echo Create .foam file for visualization in ParaView 
+    touch mesh-motion_MachineLearning/of_model/machine-learning.foam
+
+    echo Generating mesh quality metrics
+    mpirun -np 4 checkMesh \
+	    -case mesh-motion_MachineLearning/of_model \
+	    -writeFields '(nonOrthoAngle skewness)' -parallel
 )
 
 #------------------------------------------------------------------------------
