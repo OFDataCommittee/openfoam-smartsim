@@ -12,9 +12,6 @@ import sys
 from smartsim import Experiment
 import time
 
-# For calling pre-processing scripts
-import subprocess
-
 # SLURM CLUSTER
 # exp = Experiment("mesh-motion", launcher="slurm") 
 
@@ -55,14 +52,6 @@ exp.generate(training_app, overwrite=True)
 
 
 try:
-    # Pre-process: clean existing data in spinningDisk.
-    res_allrun_clean = subprocess.call(['bash', './Allclean'])
-    print(f'Allclean executed with return code: {res_allrun_clean}')
-    # Pre-process: create a mesh and decompose the solution domain of spinningDisk 
-    # - Pre-processing does not interact with ML, so SmartSim models are not used.
-    res_allrun_pre = subprocess.call(['bash', './Allrun.pre'])
-    print(f'Allrun.pre executed with return code: {res_allrun_pre}')
-    
     # Run the experiment
     print("Starting the OpenFOAM case")
     exp.generate(of_model, overwrite=True)

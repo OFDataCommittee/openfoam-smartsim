@@ -3,7 +3,7 @@ cd "${0%/*}" || exit                                # Run from this directory
 . ${WM_PROJECT_DIR:?}/bin/tools/RunFunctions        # Tutorial run functions
 #------------------------------------------------------------------------------
 
-# Make 3D mesh in slab of cells.
+echo Make 3D mesh in slab of cells.
 (
     cd wingMotion_snappyHexMesh || exit
 
@@ -18,7 +18,7 @@ cd "${0%/*}" || exit                                # Run from this directory
     runApplication snappyHexMesh -overwrite
 )
 
-# Make a 2D mesh by extruding a patch and solve to steady state.
+echo Make a 2D mesh by extruding a patch and solve to steady state.
 (
     cd wingMotion2D_simpleFoam || exit
 
@@ -31,8 +31,7 @@ cd "${0%/*}" || exit                                # Run from this directory
     runApplication simpleFoam
 )
 
-# Copy mesh from the steady state case, map the results to a mesh motion case,
-# then solve transient.
+echo Copy mesh from the steady state case, map the results to a mesh motion case, then solve transient.
 (
     cd wingMotion2D_pimpleFoam || exit
 
@@ -49,8 +48,6 @@ cd "${0%/*}" || exit                                # Run from this directory
     mv -f 0/pointDisplacement.unmapped 0/pointDisplacement
 
     runApplication decomposePar
-
-    cd ..
 )
 
 #------------------------------------------------------------------------------

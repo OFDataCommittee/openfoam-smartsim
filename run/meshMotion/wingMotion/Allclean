@@ -3,6 +3,8 @@ cd "${0%/*}" || exit                                # Run from this directory
 . ${WM_PROJECT_DIR:?}/bin/tools/CleanFunctions      # Tutorial clean functions
 #------------------------------------------------------------------------------
 
+rm -rf mesh-motion
+
 ( cd wingMotion_snappyHexMesh && cleanCase && rm -rf constant )
 
 ( cd wingMotion2D_simpleFoam && cleanCase0 )

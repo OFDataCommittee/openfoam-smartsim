@@ -45,6 +45,10 @@ def train(num_mpi_ranks):
     
     # Initialize the model
     model = MLP(num_layers=3, layer_width=50, input_size=2, output_size=2, activation_fn=torch.nn.Sigmoid())
+
+    # Initialize the optimizer
+    learning_rate = 1e-03
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     
     # Make sure all datasets are avaialble in the smartredis database.
     local_time_index = 1
@@ -114,18 +118,14 @@ def train(num_mpi_ranks):
                                                                             test_size=0.2, random_state=42)
     
         # PYTORCH Training Loop
-        if local_time_index == 1: # provide sufficient epochs in the first time step
-            epochs = 10000
-            learning_rate = 1e-04
-        else: # Use the benefit of transfer-learning
-            epochs = 1000 
-            learning_rate = 1e-05
-        optimizer = optim.Adam(model.parameters(), lr=learning_rate)
         loss_func = nn.MSELoss()
       
         mean_mag_displ = torch.mean(torch.norm(displ_train, dim=1))
         validation_rmse = []
         model.train()
+        epochs = 100000
+        n_epochs = 0
+        rmse_loss_val = 1
         for epoch in range(epochs):    
             # Zero the gradients
             optimizer.zero_grad()
@@ -139,15 +139,18 @@ def train(num_mpi_ranks):
             # Backward pass and optimization
             loss_train.backward()
             optimizer.step()
-    
+
+            n_epochs = n_epochs + 1
             # Forward pass on the validation data, with torch.no_grad() for efficiency
             with torch.no_grad():
                 displ_pred_val = model(points_val)
                 mse_loss_val = loss_func(displ_pred_val, displ_val)
                 rmse_loss_val = torch.sqrt(mse_loss_val)
                 validation_rmse.append(rmse_loss_val)
+                if (rmse_loss_val < 1e-04):
+                    break
     
-        print (f"RMSE {validation_rmse[-1]}")
+        print (f"RMSE {validation_rmse[-1]}, number of epochs {n_epochs}")
         # Uncomment to visualize validation RMSE
         # plt.loglog()
         # plt.title("Validation loss RMSE")

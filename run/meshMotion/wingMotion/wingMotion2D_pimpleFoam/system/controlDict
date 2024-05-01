@@ -27,10 +27,12 @@ endTime         0.15;
 
 deltaT          1e-5;
 
-writeControl    adjustable;
+// Testing
 
-//writeInterval   0.5e-2;
-writeInterval   1e-03; // For debugging
+writeControl    adjustable;
+writeInterval   0.5e-2;
+
+//writeInterval   1e-03; // For debugging
 
 purgeWrite      0;
 
