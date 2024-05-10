@@ -1,0 +1,18 @@
+#!/bin/sh
+cd "${0%/*}" || exit                                # Run from this directory
+. ${WM_PROJECT_DIR:?}/bin/tools/RunFunctions        # Tutorial run functions
+#------------------------------------------------------------------------------
+
+cp -rf "$FOAM_TUTORIALS"/resources/geometry/wing_5degrees.obj.gz  . 
+
+gunzip wing_5degrees.obj.gz 
+
+surfaceConvert wing_5degrees.obj wing_5degrees.stl
+
+surfaceOrient wing_5degrees.stl '(-1 0 0)' wing_5degrees_orient.stl
+
+surfaceFeatureEdges wing_5degrees_orient.stl wing_5degrees_orient_edge.stl -angle 30
+        
+surfaceGenerateBoundingBox wing_5degrees_orient_edge.stl wing.stl 1.2 4 2.15 2.15 0 0
+
+cartesian2Dmesh
