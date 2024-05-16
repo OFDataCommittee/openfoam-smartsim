@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - main
+      - ci
       - 'bugfix*'
       - 'releases/**'
   pull_request:
@@ -20,11 +21,19 @@ on:
 
 jobs:
   build:
+    strategy:
+      matrix:
+        openfoam_version: ['2312', '2212', '2112']
+        smartsim_version: ['0.7.0', '0.6.2']
+        database_backend: ['redis']
+        ubuntu_version: ['22.04', '20.04'] ## SmartSim not available yet for Python 3.12 on Ubuntu 24
+        exclude:
+          - ubuntu_version: '20.04' ## SmartSim 0.7.0 not released on ubuntu 20.04
+            smartsim_version: '0.7.0'
     runs-on: ubuntu-22.04
 
     container:
-      image: ghcr.io/foamscience/openfoam-smartsim:cpu-2312
-      options: --user openfoam
+      image: ghcr.io/foamscience/openfoam-smartsim:of-${{ matrix.openfoam_version }}-smart-${{ matrix.smartsim_version }}-${{ matrix.database_backend }}-ubuntu-${{ matrix.ubuntu_version }}
       env:
         CATCH_TIMEOUT: 20
         FOAM_FOAMUT: "/tmp/foamUT"
@@ -46,13 +55,13 @@ jobs:
 
       - name: Compile
         run: |
-          source /usr/lib/openfoam/openfoam2312/etc/bashrc
+          source /usr/lib/openfoam/openfoam${{ matrix.openfoam_version }}/etc/bashrc
           mkdir -p $FOAM_USER_LIBBIN
           ./Allwmake 
 
       - name: Compile Tests and Run
         run: |
-          source /usr/lib/openfoam/openfoam2312/etc/bashrc
+          source /usr/lib/openfoam/openfoam${{ matrix.openfoam_version }}/etc/bashrc
           ./Allwmake 
           export SSDB="redis:6379"
           git clone https://github.com/FoamScience/foamUT $FOAM_FOAMUT
