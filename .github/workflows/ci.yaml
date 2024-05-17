@@ -1,4 +1,4 @@
-name: smartredis
+name: tests_ubuntu
 defaults:
   run:
     shell: bash -o pipefail -i {0}
@@ -10,7 +10,7 @@ on:
       - 'bugfix*'
       - 'releases/**'
   pull_request:
-    types: [opened, reopened]
+    types: [opened, reopened, synchronize]
   workflow_dispatch:
     inputs:
       debug_enabled:
@@ -22,6 +22,7 @@ on:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         openfoam_version: ['2312', '2212', '2112']
         smartsim_version: ['0.7.0', '0.6.2']
@@ -37,15 +38,15 @@ jobs:
       env:
         CATCH_TIMEOUT: 20
         FOAM_FOAMUT: "/tmp/foamUT"
-        SSDB: "redis:6379"
+        SSDB: "smartdb:6379"
 
     services:
-      redis:
-        image: redislabs/redisai
+      smartdb:
+        image: ${{ matrix.database_backend == 'redis' && 'redislabs/redisai' || 'eqalpha/keydb' }}
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
@@ -63,7 +64,7 @@ jobs:
         run: |
           source /usr/lib/openfoam/openfoam${{ matrix.openfoam_version }}/etc/bashrc
           ./Allwmake 
-          export SSDB="redis:6379"
+          export SSDB="smartdb:6379"
           git clone https://github.com/FoamScience/foamUT $FOAM_FOAMUT
           sed -i 's/mpirun/mpirun --oversubscribe/g' $FOAM_FOAMUT/Alltest
           ln -s "$PWD"/tests "$FOAM_FOAMUT"/tests/smartSimFOTests

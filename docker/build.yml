@@ -29,6 +29,7 @@
       set_fact:
         database_backends:
           - "redis"
+          - "keydb"
 
     - name: Define list of Ubuntu versions
       set_fact:

@@ -14,7 +14,7 @@ things work on the default toolchain versions (Compilers, system OpenMPI, ..., e
 We use [Github Container Registry](https://ghcr.io/) to store the Docker images necessary for
 CI workflows.
 
-## Instructions
+## Instructions for automated image builds
 
 > [!NOTE]
 > You will want to install ansible (locally) to build the images easily: `pip install ansible`.
@@ -30,3 +30,15 @@ CI workflows.
    `strategy` section.
    - For example, to add a new version of OpenFOAM, add the version to `jobs.build.strategy.matrix.openfoam_version`
    - Then commit the changes to the repository.
+
+## Instructions for manual image builds
+
+```sh
+cd docker
+docker build \
+    --build-arg OPENFOAM_VERSION=2312 \
+    --build-arg UBUNTU_VERSION=22.04 \
+    --build-arg DATABASE_BACKEND=redis \
+    --build-arg SMARTSIM_VERSION=0.7.0 \
+    -t ghcr.io/<github_user>/openfoam-smartsim:of-2312-smartsim-0.7.0-redis-ubuntu-22.04 .
+```
