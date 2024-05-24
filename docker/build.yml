@@ -17,7 +17,6 @@
         openfoam_versions:
           - "2312"
           - "2212"
-          - "2112"
 
     - name: Define list of SmartSim versions
       set_fact:
@@ -29,7 +28,6 @@
       set_fact:
         database_backends:
           - "redis"
-          - "keydb"
 
     - name: Define list of Ubuntu versions
       set_fact:
@@ -75,7 +73,7 @@
 
     - name: Push Docker images to GitHub Container Registry
       docker_image:
-        name: "ghcr.io/{{ username }}/openfoam-smartsim:of-{{ item.0 }}-smart-{{ item.1 }}-{{ item.2 }}-ubuntu-{{ item.3 }}"
+        name: "ghcr.io/ofdatacommittee/openfoam-smartsim:of-{{ item.0 }}-smart-{{ item.1 }}-{{ item.2 }}-ubuntu-{{ item.3 }}"
         source: local
         push: yes
       loop: "{{ openfoam_versions|product(smartsim_versions, database_backends, ubuntu_versions)|list }}"

@@ -24,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        openfoam_version: ['2312', '2212', '2112']
+        openfoam_version: ['2312', '2212']
         smartsim_version: ['0.7.0', '0.6.2']
         database_backend: ['redis']
         ubuntu_version: ['22.04', '20.04'] ## SmartSim not available yet for Python 3.12 on Ubuntu 24
@@ -34,7 +34,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     container:
-      image: ghcr.io/foamscience/openfoam-smartsim:of-${{ matrix.openfoam_version }}-smart-${{ matrix.smartsim_version }}-${{ matrix.database_backend }}-ubuntu-${{ matrix.ubuntu_version }}
+      image: ghcr.io/ofdatacommittee/openfoam-smartsim:of-${{ matrix.openfoam_version }}-smart-${{ matrix.smartsim_version }}-${{ matrix.database_backend }}-ubuntu-${{ matrix.ubuntu_version }}
       env:
         CATCH_TIMEOUT: 20
         FOAM_FOAMUT: "/tmp/foamUT"
