@@ -1,0 +1,80 @@
+# ansible-playbook build.yml --extra-vars "username=user  token=token"
+---
+- name: Build openfoam-smartsim CI infrastructure
+  hosts: localhost
+  gather_facts: false
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+
+  tasks:
+    - name: Install docker python support for ansible
+      pip:
+        name: docker
+        state: present
+
+    - name: Define list of OpenFOAM versions
+      set_fact:
+        openfoam_versions:
+          - "2312"
+          - "2212"
+
+    - name: Define list of SmartSim versions
+      set_fact:
+        smartsim_versions:
+          - "0.7.0"
+          - "0.6.2"
+
+    - name: Define list of DB backends
+      set_fact:
+        database_backends:
+          - "redis"
+
+    - name: Define list of Ubuntu versions
+      set_fact:
+        ubuntu_versions:
+          #- "24.04" ## SmartSim not available for Python 3.12
+          - "22.04"
+          - "20.04"
+
+    - name: Login to GitHub Container Registry
+      docker_login:
+        username: "{{ username }}"
+        password: "{{ token }}"
+        registry_url: "https://ghcr.io"
+
+    - name: Build Docker images
+      docker_image:
+        name: "ghcr.io/{{ username }}/openfoam-smartsim:of-{{ item.0 }}-smart-{{ item.1 }}-{{ item.2 }}-ubuntu-{{ item.3 }}"
+        source: "build"
+        build:
+          path: "."
+          dockerfile: "Dockerfile"
+          pull: yes
+          args:
+            OPENFOAM_VERSION: "{{ item.0 }}"
+            SMARTSIM_VERSION: "{{ item.1 }}"
+            DATABASE_BACKEND: "{{ item.2 }}"
+            UBUNTU_VERSION: "{{ item.3 }}"
+      loop: "{{ openfoam_versions|product(smartsim_versions, database_backends, ubuntu_versions)|list }}"
+      when: "not (item.1 == '0.7.0' and item.3 == '20.04')"
+      async: 1200
+      poll: 0
+      register: async_result
+
+    - name: Wait for all build tasks to complete
+      async_status:
+        jid: "{{ item.ansible_job_id }}"
+      loop: "{{ async_result.results }}"
+      when: item.changed
+      register: async_status_result
+      until: async_status_result.finished
+      retries: 20
+      delay: 60
+
+    - name: Push Docker images to GitHub Container Registry
+      docker_image:
+        name: "ghcr.io/ofdatacommittee/openfoam-smartsim:of-{{ item.0 }}-smart-{{ item.1 }}-{{ item.2 }}-ubuntu-{{ item.3 }}"
+        source: local
+        push: yes
+      loop: "{{ openfoam_versions|product(smartsim_versions, database_backends, ubuntu_versions)|list }}"
+      when: "not (item.1 == '0.7.0' and item.3 == '20.04')"
