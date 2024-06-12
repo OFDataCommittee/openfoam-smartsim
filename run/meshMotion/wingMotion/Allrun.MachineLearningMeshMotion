@@ -1,0 +1,40 @@
+#!/bin/sh
+cd "${0%/*}" || exit                                # Run from this directory
+. ${WM_PROJECT_DIR:?}/bin/tools/RunFunctions        # Tutorial run functions
+#------------------------------------------------------------------------------
+
+./Allclean
+
+./Allrun.pre
+
+echo Delete previous results mesh-motion_MachineLearning
+rm -rf mesh-motion_MachineLearning
+
+echo Use the constant/dynamicMesh.laplace settings and run the solver locally
+(
+    cd wingMotion2D_pimpleFoam || exit
+    
+    echo Set mesh motion settings to MachineLearning mesh motion
+    cp constant/dynamicMeshDict.MachineLearningMeshMotion constant/dynamicMeshDict
+
+    cd ..
+
+    echo Run the SmartSim python script that implements the ML+CFD algorithm
+    python openfoam-smartsim-wingmotion.py 
+
+    echo Copy data for comparison
+    cp -r mesh-motion mesh-motion_MachineLearning 
+
+    echo Reset mesh motion settings 
+    git checkout wingMotion2D_pimpleFoam/constant/dynamicMeshDict 
+
+    echo Create .foam file for visualization in ParaView 
+    touch mesh-motion_MachineLearning/of_model/machine-learning.foam
+
+    echo Generating mesh quality metrics
+    mpirun -np 4 checkMesh \
+	    -case mesh-motion_MachineLearning/of_model \
+	    -writeFields '(nonOrthoAngle skewness)' -parallel
+)
+
+#------------------------------------------------------------------------------
