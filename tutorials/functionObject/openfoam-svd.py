@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 # This script sets up a smartsim experiment that runs the simpleFoam solver 
-# on the pitzDaily case.
+# on the pitzDaily case with an ensemble of parameters.
 # The experiment involves the use of the fieldToSmartRedis function objects, 
 # which writes a set of OpenFOAM fields to the SmartRedis database. The SmartRedis client 
 # then reads these fields, initiating a process of Singular Value Decomposition.
@@ -48,55 +48,67 @@ def calc_svd(input_tensor):
 
 of_case_name = "pitzDaily"
 fn_name = "pUPhiTest"
+control_dict = ParsedParameterFile(os.path.join(of_case_name, "system/controlDict"))
+ens_name = control_dict["functions"][fn_name]["ensemble"]
+print(ens_name)
 
 # Set up the OpenFOAM parameter variation as a SmartSim Experiment 
 exp = Experiment("smartsim-openfoam-function-object", launcher="local")
 
 # Assumes SSDB="localhost:8000"
 db = exp.create_database(port=8000, interface="lo")
+params = {
+    "dummy": [1, 2]
+}
 exp.start(db)
 
 # blockMesh settings & model
-blockMesh_settings = exp.create_run_settings(exe="blockMesh", exe_args=f"-case {of_case_name}")
+blockMesh_settings = exp.create_run_settings(exe="./pitzDaily/Allrun")
 blockMesh_model = exp.create_model(name="blockMesh", run_settings=blockMesh_settings)
+ens = exp.create_ensemble(ens_name, params, None, blockMesh_settings)
+ens.attach_generator_files(
+        to_copy=[f"./{of_case_name}"],
+        to_configure=[])
 # Mesh with blockMesh, and wait for meshing to finish before running the next model
-exp.start(blockMesh_model, summary=True, block=True) 
+#exp.start(blockMesh_model, summary=True, block=True) 
+exp.generate(ens, overwrite=True)
+exp.start(ens)
     
-# simpleFoam settings & model
-simpleFoam_settings = exp.create_run_settings(exe="simpleFoam", exe_args=f"-case {of_case_name}")
-simpleFoam_model = exp.create_model(name="simpleFoam", run_settings=simpleFoam_settings)
-# Run simpleFoam solver
-exp.start(simpleFoam_model, summary=True, block=True) 
-
-# Get the names of OpenFOAM fiels from controlDict.functionObject 
-control_dict = ParsedParameterFile(os.path.join(of_case_name, "system/controlDict"))
-field_names = list(control_dict["functions"][fn_name]["fields"])
-
-# Open a connection to the SmartRedis database
-client = Client(address=db.get_address()[0], cluster=False)
-client.set_function("svd", calc_svd)
-
-# Get last timestep index from the metadata dataset
-end_ts = int(client.get_dataset(fn_name+"_metadata").get_meta_strings("EndTimeIndex")[0])
-
-# Apply SVD to fields 
-print(f"SVD will be performed on OpenFOAM fields: {field_names}")
-for field_name in field_names:
-    print (f"SVD decomposition of field: {field_name}...")
-    db_field_name = get_field_name(fn_name, field_name, processor=0, timestep=end_ts)
-    print(f"Using {db_field_name} from the database")
-    client.run_script("svd", "calc_svd", [db_field_name], ["U", "S", "V"])
-    U = client.get_tensor("U")
-    S = client.get_tensor("S")
-    V = client.get_tensor("V")
-
-    # Compute the Singular Value Decomposition of the field
-    field_svd = np.dot(U, np.dot(S, V))
-    field_svd = field_svd[:, np.newaxis]
-
-    # Compute the mean error of the SVD 
-    field = client.get_tensor(db_field_name)
-    svd_rmse = np.sqrt(np.mean((field - field_svd) ** 2))
-    print (f"RMSE({field_name}, SVD({field_name})): {svd_rmse}")
+## simpleFoam settings & model
+#simpleFoam_settings = exp.create_run_settings(exe="simpleFoam", exe_args=f"-case {of_case_name}")
+#simpleFoam_model = exp.create_model(name="simpleFoam", run_settings=simpleFoam_settings)
+## Run simpleFoam solver
+#exp.start(simpleFoam_model, summary=True, block=True) 
+#
+## Get the names of OpenFOAM fiels from controlDict.functionObject 
+#control_dict = ParsedParameterFile(os.path.join(of_case_name, "system/controlDict"))
+#field_names = list(control_dict["functions"][fn_name]["fields"])
+#
+## Open a connection to the SmartRedis database
+#client = Client(address=db.get_address()[0], cluster=False)
+#client.set_function("svd", calc_svd)
+#
+## Get last timestep index from the metadata dataset
+#end_ts = int(client.get_dataset(fn_name+"_metadata").get_meta_strings("EndTimeIndex")[0])
+#
+## Apply SVD to fields 
+#print(f"SVD will be performed on OpenFOAM fields: {field_names}")
+#for field_name in field_names:
+#    print (f"SVD decomposition of field: {field_name}...")
+#    db_field_name = get_field_name(fn_name, field_name, processor=0, timestep=end_ts)
+#    print(f"Using {db_field_name} from the database")
+#    client.run_script("svd", "calc_svd", [db_field_name], ["U", "S", "V"])
+#    U = client.get_tensor("U")
+#    S = client.get_tensor("S")
+#    V = client.get_tensor("V")
+#
+#    # Compute the Singular Value Decomposition of the field
+#    field_svd = np.dot(U, np.dot(S, V))
+#    field_svd = field_svd[:, np.newaxis]
+#
+#    # Compute the mean error of the SVD 
+#    field = client.get_tensor(db_field_name)
+#    svd_rmse = np.sqrt(np.mean((field - field_svd) ** 2))
+#    print (f"RMSE({field_name}, SVD({field_name})): {svd_rmse}")
    
 exp.stop(db)

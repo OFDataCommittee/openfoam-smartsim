@@ -73,6 +73,9 @@ protected:
         //- Client name (for debug output)
         word clientName_;
 
+        //- ensemble name if any
+        autoPtr<word> ensemble_;
+
         //- The RedisAI database client
         tmp<smartRedisAdapter> redisDB_;
 
@@ -215,6 +218,9 @@ public:
             const word& key,
             const word& value
         );
+
+        //- return ensemble name if set
+        const word ensemble() const { return ensemble_ ? ensemble_() : ""; }
 
         //- Send fields of type T to SmartRedis Dataset
         template<class T>

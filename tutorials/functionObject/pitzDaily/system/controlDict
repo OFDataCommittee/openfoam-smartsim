@@ -51,9 +51,15 @@ functions
         type fieldsToSmartRedis;
         libs ("libsmartredisFunctionObjects.so");
         clusterMode off;
+        ensemble pitzDaily;
         fields (p U phi);
         patches (internal);
     }
+}
+
+DebugSwitches
+{
+    smartRedisClient 1;
 }
 
 // ************************************************************************* //

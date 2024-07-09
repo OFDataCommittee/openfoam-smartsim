@@ -54,6 +54,7 @@ Foam::smartRedisClient::smartRedisClient
     region_(dict.getOrDefault<word>("region", polyMesh::defaultRegion)),
     mesh_(runTime.lookupObject<fvMesh>(region_)),
     clientName_(dict.getOrDefault<word>("clientName", "default")),
+    ensemble_(dict.found("ensemble") ? new word(dict.get<word>("ensemble")) : nullptr),
     redisDB_(
         runTime.foundObject<smartRedisAdapter>(clientName_)
         ? &runTime.lookupObjectRef<smartRedisAdapter>(clientName_)
@@ -144,6 +145,11 @@ Foam::smartRedisClient::postMetadata()
 DataSet
 Foam::smartRedisClient::getMetadata()
 {
+    if (ensemble_)
+    {
+        Info << "***** --------- ****** " << ensemble() << endl;
+        redisDB_->client().set_data_source(ensemble());
+    }
     word dsName = name()+"_metadata";
     if (!redisDB_->client().dataset_exists(dsName))
     {
