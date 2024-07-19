@@ -30,7 +30,9 @@ elif [ $WM_COMPILER == "Icx" ]; then
 fi
 make lib
 cd "$_REPO_ROOT" || exit 1
-cp -r $FOAM_SMARTREDIS/install/lib/*.* $FOAM_USER_LIBBIN 
+cp $FOAM_SMARTREDIS/install/lib/libsmartredis.so $FOAM_USER_LIBBIN 
+cp $FOAM_SMARTREDIS/build/Release/hiredis-prefix/src/hiredis-build/libhiredis.a $FOAM_USER_LIBBIN
+cp $FOAM_SMARTREDIS/build/Release/redis++-prefix/src/redis++-build/libredis++.a $FOAM_USER_LIBBIN
 export FOAM_CODE_TEMPLATES=$_REPO_ROOT/etc/dynamicCode/
 
 ## Compile OpenFOAM libs
