@@ -34,13 +34,6 @@ def get_field_name(fn_name, field_name, processor=0, timestep=None):
     f_name = f_naming.render(name=field_name, patch="internal")
     return f"{{{ds_name}}}.{f_name}"
 
-def calc_svd(input_tensor):
-    """
-    Applies the SVD (Singular Value Decomposition) function to the input tensor
-    using the TorchScript API.
-    """
-    return input_tensor.svd()
-
 of_case_name = "pitzDaily"
 fn_name = "pUPhiTest"
 ens_name = "pitzDaily"
