@@ -1,0 +1,94 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2206                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       pointVectorField;
+    object      pointDisplacement;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [0 1 0 0 0 0 0];
+
+internalField   uniform (0 0 0);
+
+boundaryField
+{
+
+    cylinder
+    {
+        type        solidBodyMotionDisplacement;
+
+        solidBodyMotionFunction  oscillatingLinearMotion;
+
+	oscillatingLinearMotionCoeffs
+	{
+            amplitude   (0 1 0);    // Amplitude of oscillation in x direction
+            omega       4;        // Angular frequency in rad/s
+            phase       0;          // Phase shift in radians (optional)
+	}
+
+        multiMotionCoeffs
+        {
+            translation
+            {
+                solidBodyMotionFunction  linearMotion;
+                linearMotionCoeffs
+                {
+                    velocity   (1 0 0);
+                }
+            }
+            rotation
+            {
+                solidBodyMotionFunction rotatingMotion;
+                rotatingMotionCoeffs
+                {
+                    origin      (0 0 0);
+                    axis        (0 0 1);
+                    //omega       1; // rad/s, 1rad/s=9.5rpm
+                }
+            }
+        }
+
+        oscillatingRotatingMotionCoeffs
+        {
+            origin      (0 0 0);
+            axis        (0 0 1);
+            omega       1.5;      // rad/s, 1rad/s=9.5rpm
+            amplitude   (0 0 30);    // max amplitude (degrees)
+        }
+    }
+
+    inlet
+    {
+        type            fixedValue;
+        value           uniform (0 0 0); 
+    }
+
+    outlet
+    {
+        type            fixedValue;
+        value           uniform (0 0 0); 
+    }
+
+    walls
+    {
+        type            fixedValue;
+        value           uniform (0 0 0); 
+    }
+
+    frontAndBack
+    {
+        type            empty;
+    }
+
+}
+
+
+// ************************************************************************* //
