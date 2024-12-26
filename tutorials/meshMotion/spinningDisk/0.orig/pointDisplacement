@@ -24,7 +24,16 @@ boundaryField
     cylinder
     {
         type        solidBodyMotionDisplacement;
-        solidBodyMotionFunction  oscillatingRotatingMotion;
+
+        solidBodyMotionFunction  oscillatingLinearMotion;
+
+	oscillatingLinearMotionCoeffs
+	{
+            amplitude   (0 1 0);    // Amplitude of oscillation in x direction
+            omega       4;        // Angular frequency in rad/s
+            phase       0;          // Phase shift in radians (optional)
+	}
+
         multiMotionCoeffs
         {
             translation
@@ -42,10 +51,11 @@ boundaryField
                 {
                     origin      (0 0 0);
                     axis        (0 0 1);
-                    omega       1; // rad/s, 1rad/s=9.5rpm
+                    //omega       1; // rad/s, 1rad/s=9.5rpm
                 }
             }
         }
+
         oscillatingRotatingMotionCoeffs
         {
             origin      (0 0 0);
