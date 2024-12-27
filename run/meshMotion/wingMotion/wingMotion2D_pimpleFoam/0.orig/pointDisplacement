@@ -1,7 +1,7 @@
 /*--------------------------------*- C++ -*----------------------------------*\
 | =========                 |                                                 |
 | \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
-|  \\    /   O peration     | Version:  v2206                                 |
+|  \\    /   O peration     | Version:  v2312                                 |
 |   \\  /    A nd           | Website:  www.openfoam.com                      |
 |    \\/     M anipulation  |                                                 |
 \*---------------------------------------------------------------------------*/
@@ -20,20 +20,10 @@ internalField   uniform (0 0 0);
 
 boundaryField
 {
-
-    cylinder
+    wing
     {
         type        solidBodyMotionDisplacement;
-
-        solidBodyMotionFunction  oscillatingLinearMotion;
-
-	oscillatingLinearMotionCoeffs
-	{
-            amplitude   (0 1 0);    // Amplitude of oscillation in x direction
-            omega       4;        // Angular frequency in rad/s
-            phase       0;          // Phase shift in radians (optional)
-	}
-
+        solidBodyMotionFunction  multiMotion; 
         multiMotionCoeffs
         {
             translation
@@ -41,7 +31,7 @@ boundaryField
                 solidBodyMotionFunction  linearMotion;
                 linearMotionCoeffs
                 {
-                    velocity   (1 0 0);
+                    velocity   (2 0 0);
                 }
             }
             rotation
@@ -51,43 +41,27 @@ boundaryField
                 {
                     origin      (0 0 0);
                     axis        (0 0 1);
-                    //omega       1; // rad/s, 1rad/s=9.5rpm
+                    omega       -3; // rad/s, 1rad/s=9.5rpm
                 }
             }
         }
-
-        oscillatingRotatingMotionCoeffs
-        {
-            origin      (0 0 0);
-            axis        (0 0 1);
-            omega       1.5;      // rad/s, 1rad/s=9.5rpm
-            amplitude   (0 0 30);    // max amplitude (degrees)
-        }
     }
 
-    inlet
-    {
-        type            fixedValue;
-        value           uniform (0 0 0); 
-    }
-
-    outlet
-    {
-        type            fixedValue;
-        value           uniform (0 0 0); 
-    }
-
-    walls
-    {
-        type            fixedValue;
-        value           uniform (0 0 0); 
-    }
-
-    frontAndBack
+    front
     {
         type            empty;
     }
 
+    back
+    {
+        type            empty;
+    }
+
+    ".*"
+    {
+        type            fixedValue;
+        value           uniform (0 0 0);
+    }
 }
 
 
