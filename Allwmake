@@ -2,6 +2,14 @@
 
 orig_dit="$(pwd)"
 
+# Create the $FOAM_USER_LIBBIN if not existing.
+# - This happens with a fresh OpenFOAM installation.
+# - openfoam-smartsim libraries are placed into $FOAM_USER_LIBBIN
+if [ ! -d "$FOAM_USER_LIBBIN" ]; 
+then
+    mkdir -p $FOAM_USER_LIBBIN
+fi
+
 ## Compile SmartRedis libs
 export _REPO_ROOT="$(git rev-parse --show-toplevel)"
 cd "$_REPO_ROOT" || exit 1
