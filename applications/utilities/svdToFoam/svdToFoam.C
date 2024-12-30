@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
     SmartRedis::Client client(false);
 
     const auto mpiRank = std::to_string(Pstream::myProcNo());
-    auto baseName = "rec_ensemble_" + mpiRank + 
+    auto baseName = "rec_ensemble_r" + svdRank + "_" + mpiRank + 
         ".rank_" + svdRank + "_field_name_" + fieldName +
         "_mpi_rank_" + mpiRank;
 
@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
         // write left singular vectors into last time folder
         if (!isRunning)
         {
-            auto modeBaseName = "rec_ensemble_" + mpiRank + ".global_U_mpi_rank_" + mpiRank;
+            auto modeBaseName = "rec_ensemble_r" + svdRank + "_"  + mpiRank + ".global_U_mpi_rank_" + mpiRank;
             for (int r=0; r < std::stoi(svdRank); r++)
             {
 

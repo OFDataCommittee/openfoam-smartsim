@@ -2,16 +2,16 @@
 
 This folder contains several workflows to compute the singular value decomposition (SVD) of OpenFOAM field data:
 
-1. **foam-smartsim-svd.ipynb**: works with pre-computed snapshots; requires the *foamSmartSimSvd* utility; requires running the *cavity* test case before starting the notebook
-2. **foam-smartsim-svd-db-api.ipynb**: same as *foam-smartsim-svd.ipynb* but with alternative SmartRedis API usage
-3. **partitioned-svd-cylinder.ipynb**: employs the *fieldsToSmartRedis* function object to write OpenFOAM data directly into SmartRedis; requires the *svdToFoam* utility
+1. **foam-smartsim-svd.ipynb**: works with pre-computed snapshots; requires the *foamSmartSimSvd* utility; requires running the *cavity* test case before starting the notebook; uses the *cavity* simulation
+2. **foam-smartsim-svd-db-api.ipynb**: same as *foam-smartsim-svd.ipynb* but with alternative SmartRedis API usage; uses the *cavity* simulation
+3. **partitioned-svd-cylinder.ipynb**: employs the *fieldsToSmartRedis* function object to write OpenFOAM data directly into SmartRedis; requires the *svdToFoam* utility; uses the *cylinder2D* simulation
 
 ## Requirements
 
 For general dependencies, refer to the [README.md](/README.md) in the top-level folder.
 To compile all utilities and function objects, go to the top-level folder and run:
 ```
-source SOURCEME.sh
+./Allwmake
 ```
 
 ## Executing the notebooks
