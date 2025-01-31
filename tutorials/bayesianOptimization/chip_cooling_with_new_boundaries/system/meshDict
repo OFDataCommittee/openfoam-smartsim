@@ -1,0 +1,106 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                |
+| \\      /  F ield         | cfMesh: A library for mesh generation          |
+|  \\    /   O peration     |                                                |
+|   \\  /    A nd           | Author: Franjo Juretic                         |
+|    \\/     M anipulation  | E-mail: franjo.juretic@c-fields.com            |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version   2.0;
+    format    ascii;
+    class     dictionary;
+    location  "system";
+    object    meshDict;
+}
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+surfaceFile "chip_cooling_m.fms";
+
+maxCellSize 				0.0015;
+
+//boundaryLayers
+//{
+//	patchBoundaryLayers
+//	{
+//	xMin
+//	{	
+//	nLayers 5;
+  //	thicknessRatio 1.1;
+//	firstLayerThickness 7.9e-4;
+//	}
+//	xMax
+//	{	
+//	nLayers 5;
+  //	thicknessRatio 1.1;
+//	firstLayerThickness 7.9e-4;
+//	}
+//	zMin
+//	{	
+//	nLayers 5;
+  //	thicknessRatio 1.1;
+//	firstLayerThickness 7.9e-4;
+//	}
+//	zMax
+//	{	
+//	nLayers 5;
+  //	thicknessRatio 1.1;
+//	firstLayerThickness 7.9e-4;
+//	}
+//	solid
+//	{	
+//	nLayers 5;
+  //	thicknessRatio 1.1;
+//	firstLayerThickness 6.6e-4;
+//	}
+//	}
+//}
+
+localRefinement
+{
+	solid
+    	{
+		additionalRefinementLevels 3;
+     		refinementThickness 6.6e-4;
+  	}
+	xMin
+        { 		
+		additionalRefinementLevels 3;
+                refinementThickness 7.9e-4;	
+	}
+       xMax
+       {
+                additionalRefinementLevels 3;
+                refinementThickness 7.9e-4;
+        }
+        zMin
+        {
+                additionalRefinementLevels 3;
+                refinementThickness 7.9e-4;
+        }
+        zMax
+        {
+                additionalRefinementLevels 3;
+                refinementThickness 7.9e-4;
+        }
+}
+
+renameBoundary
+{
+    defaultName     fixedWalls;
+    defaultType     wall;
+
+    newPatchNames
+    {
+       "xMin" { newName side1 ; type wall ; inGroups 1(wall); } 
+       "xMax" { newName side2 ; type wall ; inGroups 1(wall); } 
+       "yMin" { newName inlet ; type patch ; } 
+       "yMax" { newName outlet ; type patch ; } 
+       "zMin" { newName bottom ; type wall ; inGroups 1(wall); } 
+       "zMax" { newName top ; type wall ; inGroups 1(wall); } 
+    }
+}
+
+
+// ************************************************************************* //

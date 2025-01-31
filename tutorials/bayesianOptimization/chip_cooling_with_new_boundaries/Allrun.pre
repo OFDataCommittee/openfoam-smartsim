@@ -1,0 +1,12 @@
+#!/bin/sh
+cd ${0%/*} || exit 1                        # Run from this directory
+/work/groups/da_mma_b/christian/squashfs-root/usr/bin/freecadcmd ./obstacles_with_new_parameters.py;
+cat obstacles.stl channel.stl > chip_cooling_mm.stl;
+surfaceTransformPoints -scale 0.001 chip_cooling_mm.stl chip_cooling_m.stl
+surfaceFeatureEdges chip_cooling_m.stl chip_cooling_m.fms;
+cartesianMesh;
+checkMesh -constant;
+topoSet;
+decomposePar;
+touch foam.foam
+#------------------------------------------------------------------------------

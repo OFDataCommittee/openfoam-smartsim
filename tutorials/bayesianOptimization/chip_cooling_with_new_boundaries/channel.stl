@@ -1,0 +1,96 @@
+solid xMin
+ facet normal -1 0 0
+  outer loop
+   vertex 0 0 0
+   vertex 0 90 3
+   vertex 0 90 0
+  endloop
+ endfacet
+ facet normal -1 0 0
+  outer loop
+   vertex 0 0 0
+   vertex 0 0 3
+   vertex 0 90 3
+  endloop
+ endfacet
+endsolid xMin
+solid xMax
+ facet normal 1 0 0
+  outer loop
+   vertex 38 0 0
+   vertex 38 90 0
+   vertex 38 90 3
+  endloop
+ endfacet
+ facet normal 1 0 0
+  outer loop
+   vertex 38 0 0
+   vertex 38 90 3
+   vertex 38 0 3
+  endloop
+ endfacet
+endsolid xMax
+solid yMin
+ facet normal 0 -1 0
+  outer loop
+   vertex 0 0 0
+   vertex 38 0 0
+   vertex 38 0 3
+  endloop
+ endfacet
+ facet normal 0 -1 0
+  outer loop
+   vertex 0 0 0
+   vertex 38 0 3
+   vertex 0 0 3
+  endloop
+ endfacet
+endsolid yMin
+solid yMax
+ facet normal 0 1 0
+  outer loop
+   vertex 0 90 0
+   vertex 38 90 3
+   vertex 38 90 0
+  endloop
+ endfacet
+ facet normal 0 1 0
+  outer loop
+   vertex 0 90 0
+   vertex 0 90 3
+   vertex 38 90 3
+  endloop
+ endfacet
+endsolid yMax
+solid zMin
+ facet normal 0 0 -1
+  outer loop
+   vertex 0 0 0
+   vertex 0 90 0
+   vertex 38 90 0
+  endloop
+ endfacet
+ facet normal 0 0 -1
+  outer loop
+   vertex 0 0 0
+   vertex 38 90 0
+   vertex 38 0 0
+  endloop
+ endfacet
+endsolid zMin
+solid zMax
+ facet normal 0 0 1
+  outer loop
+   vertex 0 0 3
+   vertex 38 90 3
+   vertex 0 90 3
+  endloop
+ endfacet
+ facet normal 0 0 1
+  outer loop
+   vertex 0 0 3
+   vertex 38 0 3
+   vertex 38 90 3
+  endloop
+ endfacet
+endsolid zMax
