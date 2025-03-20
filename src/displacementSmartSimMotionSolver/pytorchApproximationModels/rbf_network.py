@@ -43,6 +43,13 @@ class WendlandLinearNetwork(nn.Module):
         r = torch.cdist(x, self.centers) / self.r_max
         return torch.exp(-r**2)  # Infinitely smooth Gaussian RBF
 
+    #def rbf(self, x):
+    #    """
+    #    Compute Gaussian RBF with enforced compact support.
+    #    """
+    #    r = torch.cdist(x, self.centers) / self.r_max
+    #    mask = (r < 1).float()  # Ensure compact support
+    #    return mask * torch.exp(-r**2)  # Compactly supported Gaussian
 
     def forward(self, x):
         """

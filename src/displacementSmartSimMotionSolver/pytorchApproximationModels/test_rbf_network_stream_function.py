@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import csv 
+import pandas as pd
 import os
 
 from rbf_network import WendlandLinearNetwork
@@ -60,6 +61,48 @@ def generate_centers(num_centers):
     centers = np.vstack([X.ravel(), Y.ravel()]).T
     return torch.tensor(centers, dtype=torch.float32)
 
+def estimate_convergence_order(csv_filename):
+    """
+    Opens a CSV file containing numerical convergence results and estimates the
+    convergence order for each row using log-log error reduction.
+
+    The last row's convergence order is set equal to the second-to-last row.
+    
+    Parameters:
+    csv_filename (str): The path to the CSV file to process.
+    """
+    # Load the CSV file
+    df = pd.read_csv(csv_filename)
+
+    # Ensure required columns exist
+    required_columns = {"point_dist", "err_validation"}
+    if not required_columns.issubset(df.columns):
+        raise ValueError(f"Missing required columns in CSV: {required_columns - set(df.columns)}")
+
+    # Compute convergence order using log-log slope formula
+    convergence_orders = []
+
+    for i in range(len(df) - 1):  # Iterate up to the second-to-last row
+        h_coarse, h_fine = df.iloc[i]["point_dist"], df.iloc[i + 1]["point_dist"]
+        err_coarse, err_fine = df.iloc[i]["err_validation"], df.iloc[i + 1]["err_validation"]
+
+        if err_coarse > 0 and err_fine > 0:  # Avoid log errors due to zero or negative values
+            p = np.log(err_coarse / err_fine) / np.log(h_coarse / h_fine)
+            convergence_orders.append(p)
+        else:
+            convergence_orders.append(np.nan)
+
+    # Ensure last row gets the same convergence order as the previous row
+    convergence_orders.append(convergence_orders[-1] if len(convergence_orders) > 0 else np.nan)
+
+    # Add convergence order column
+    df["error_convergence_order"] = convergence_orders
+
+    # Save the updated CSV file
+    df.to_csv(csv_filename, index=False)
+
+    print(f"Updated {csv_filename} with convergence orders.")
+
 def main(num_points):
     # Generate training data
     x = np.linspace(0, 1, num_points)
@@ -76,7 +119,7 @@ def main(num_points):
     # centers = generate_centers(32).clone().detach()
     centers = x_train 
     print(centers.shape)
-    r_max = 3.0 / num_points 
+    r_max = 2.5 / num_points 
     smoothness = 4  # C^4 smoothness
 
     # Initialize model
@@ -87,7 +130,7 @@ def main(num_points):
     criterion = nn.MSELoss()
 
     # Training loop
-    epochs = 2000
+    epochs = 4000
     for epoch in range(epochs):
         model.train()
         optimizer.zero_grad()
@@ -119,15 +162,14 @@ def main(num_points):
 
     # Reshape for visualization
     psi_pred = pred.reshape(X_val.shape)
-    #psi_actual = psi(X_val, Y_val)
 
     # Visualize actual and predicted stream functions
     visualize_psi(X_val, Y_val, psi_val, centers, title="Actual Stream Function")
     visualize_psi(X_val, Y_val, psi_pred, centers, title="Predicted Stream Function")
 
-    err_val = np.abs(psi_pred - psi_val)
+    err_val = np.abs(psi_pred - psi_val) / np.max(psi_val)
     visualize_psi(X_val, Y_val, err_val, centers,
-                  title="Stream Function Approximation Error")
+                  title="Stream Function Relative Approximation Error")
 
     # Define the filename
     csv_filename = "stream_function_validation.csv"
@@ -162,7 +204,10 @@ def main(num_points):
                              title="Predicted Velocity Field")
 
 if __name__ == "__main__":
-    main(num_points=4)
-    main(num_points=8)
-    main(num_points=16)
-    main(num_points=32)
+
+    # Run mesh convergence study
+    for num_points in [4,8,16,32]:
+        main(num_points)
+
+    # Estimate convergence order
+    estimate_convergence_order("stream_function_validation.csv")
