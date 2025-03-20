@@ -165,3 +165,4 @@ if __name__ == "__main__":
     main(num_points=4)
     main(num_points=8)
     main(num_points=16)
+    main(num_points=32)

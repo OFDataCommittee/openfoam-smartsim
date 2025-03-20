@@ -28,13 +28,20 @@ class WendlandLinearNetwork(nn.Module):
         self.a0 = nn.Parameter(torch.tensor(0.0))
         self.a = nn.Parameter(torch.zeros(self.dimension))
 
-    def rbf(self, x):
-        r = torch.cdist(x, self.centers) / self.r_max
-        mask = (r < 1).float()
-        rm = (1 - r).clamp(min=0.0)
+    #def rbf(self, x):
+    #    r = torch.cdist(x, self.centers) / self.r_max
+    #    mask = (r < 1).float()
+    #    rm = (1 - r).clamp(min=0.0)
 
-        phi = (1 + 6*r + (35/3)*r**2) * rm**6  # Only compute once
-        return phi * mask  # Ensure compact support
+    #    phi = (1 + 6*r + (35/3)*r**2) * rm**6  # Only compute once
+    #    return phi * mask  # Ensure compact support
+
+    def rbf(self, x):
+        """
+        Compute Gaussian RBF instead of Wendland.
+        """
+        r = torch.cdist(x, self.centers) / self.r_max
+        return torch.exp(-r**2)  # Infinitely smooth Gaussian RBF
 
 
     def forward(self, x):
@@ -44,4 +51,4 @@ class WendlandLinearNetwork(nn.Module):
         rbf_output = self.rbf(x)
         rbf_term = rbf_output @ self.weights
         linear_term = x @ self.a
-        return self.a0 + rbf_term + linear_term
+        return self.a0 + rbf_term #+ linear_term
