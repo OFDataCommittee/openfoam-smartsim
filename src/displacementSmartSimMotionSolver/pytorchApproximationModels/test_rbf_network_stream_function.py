@@ -7,7 +7,7 @@ import csv
 import pandas as pd
 import os
 
-from rbf_network import WendlandLinearNetwork
+from rbf_network import rbf_dict, RadialBasisFunctionNetwork 
 
 def psi(x, y):
     """
@@ -28,7 +28,7 @@ def visualize_psi(x, y, psi_values, centers, title="Stream Function"):
     plt.figure(figsize=(6, 6))
     plt.contourf(x, y, psi_values, levels=20, cmap='viridis')
     plt.colorbar(label='ψ')
-    plt.title(title)
+    plt.title(title + f" num_centers {len(centers)}")
     plt.xlabel('x')
     plt.ylabel('y')
     plt.grid()
@@ -64,7 +64,7 @@ def generate_centers(num_centers):
 def estimate_convergence_order(csv_filename):
     """
     Opens a CSV file containing numerical convergence results and estimates the
-    convergence order for each row using log-log error reduction.
+    convergence order for each error column using log-log error reduction.
 
     The last row's convergence order is set equal to the second-to-last row.
     
@@ -75,33 +75,36 @@ def estimate_convergence_order(csv_filename):
     df = pd.read_csv(csv_filename)
 
     # Ensure required columns exist
-    required_columns = {"point_dist", "err_validation"}
+    required_columns = {"point_dist", "err_mean", "err_max"}
     if not required_columns.issubset(df.columns):
         raise ValueError(f"Missing required columns in CSV: {required_columns - set(df.columns)}")
 
-    # Compute convergence order using log-log slope formula
-    convergence_orders = []
+    # List of error columns to process
+    error_columns = ["err_mean", "err_max"]
 
-    for i in range(len(df) - 1):  # Iterate up to the second-to-last row
-        h_coarse, h_fine = df.iloc[i]["point_dist"], df.iloc[i + 1]["point_dist"]
-        err_coarse, err_fine = df.iloc[i]["err_validation"], df.iloc[i + 1]["err_validation"]
+    for error_col in error_columns:
+        convergence_orders = []  # Store convergence orders for this error type
 
-        if err_coarse > 0 and err_fine > 0:  # Avoid log errors due to zero or negative values
-            p = np.log(err_coarse / err_fine) / np.log(h_coarse / h_fine)
-            convergence_orders.append(p)
-        else:
-            convergence_orders.append(np.nan)
+        for i in range(len(df) - 1):  # Iterate up to the second-to-last row
+            h_coarse, h_fine = df.iloc[i]["point_dist"], df.iloc[i + 1]["point_dist"]
+            err_coarse, err_fine = df.iloc[i][error_col], df.iloc[i + 1][error_col]
 
-    # Ensure last row gets the same convergence order as the previous row
-    convergence_orders.append(convergence_orders[-1] if len(convergence_orders) > 0 else np.nan)
+            if err_coarse > 0 and err_fine > 0:  # Avoid log errors due to zero or negative values
+                p = np.log(err_coarse / err_fine) / np.log(h_coarse / h_fine)
+                convergence_orders.append(p)
+            else:
+                convergence_orders.append(np.nan)
 
-    # Add convergence order column
-    df["error_convergence_order"] = convergence_orders
+        # Ensure last row gets the same convergence order as the previous row
+        convergence_orders.append(convergence_orders[-1] if len(convergence_orders) > 0 else np.nan)
+
+        # Add convergence order column to DataFrame
+        df[f"{error_col}_convergence_order"] = convergence_orders
 
     # Save the updated CSV file
     df.to_csv(csv_filename, index=False)
 
-    print(f"Updated {csv_filename} with convergence orders.")
+    print(f"Updated {csv_filename} with convergence orders for {error_columns}.")
 
 def main(num_points):
     # Generate training data
@@ -123,7 +126,7 @@ def main(num_points):
     smoothness = 4  # C^4 smoothness
 
     # Initialize model
-    model = WendlandLinearNetwork(centers, r_max, smoothness)
+    model = RadialBasisFunctionNetwork(centers, r_max, rbf_dict, rbf_type="gaussian")
 
     # Optimizer and loss
     optimizer = optim.Adam(model.parameters(), lr=0.05)
@@ -175,8 +178,8 @@ def main(num_points):
     csv_filename = "stream_function_validation.csv"
 
     # Define the header and the values to be appended
-    header = ["num_points", "point_dist", "r_max", "err_validation"]
-    data = [num_points, 1.0 / num_points, r_max, np.mean(err_val)]
+    header = ["num_points", "point_dist", "r_max", "err_mean", "err_max"]
+    data = [num_points, 1.0 / num_points, r_max, np.mean(err_val), np.max(err_val)]
 
     # Check if file exists
     file_exists = os.path.isfile(csv_filename)
