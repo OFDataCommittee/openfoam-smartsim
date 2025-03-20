@@ -29,18 +29,13 @@ class WendlandLinearNetwork(nn.Module):
         self.a = nn.Parameter(torch.zeros(self.dimension))
 
     def rbf(self, x):
-        """
-        Correct explicit Wendland polynomial RBF (d=2, k=2).
-        """
         r = torch.cdist(x, self.centers) / self.r_max
         mask = (r < 1).float()
         rm = (1 - r).clamp(min=0.0)
-        
-        phi = (1 + 6*r + (35/3)*r**2) * (mask * (1 - r).pow(6))
-        phi = mask * (1 + 6 * r + (35/3) * r**2) * rm**6
-        phi = phi * mask  # strictly enforce compact support
-        
-        return phi
+
+        phi = (1 + 6*r + (35/3)*r**2) * rm**6  # Only compute once
+        return phi * mask  # Ensure compact support
+
 
     def forward(self, x):
         """
