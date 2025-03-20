@@ -1,16 +1,34 @@
 import torch
 import torch.nn as nn
 
+import torch
+
 # Define various RBF functions with enforced compact support
 def gaussian_rbf(r):
-    """Infinitely smooth Gaussian RBF, matching Wendland's implementation."""
-    return torch.exp(-r**2)  # Matches WendlandLinearNetwork
+    """Infinitely smooth Gaussian RBF."""
+    return torch.exp(-r**2)
 
-def wendland_rbf(r):
-    """Compactly supported Wendland C^4 RBF."""
+def wendland_d2_c2_rbf(r):
+    """
+    Wendland's C^2 RBF for d=2.
+    Compactly supported, continuously differentiable (C^2).
+    
+    Formula: (1 - r)^4_+ (4r + 1)
+    """
     mask = (r < 1).float()
     rm = (1 - r).clamp(min=0.0)
-    return mask * (1 + 6*r + (35/3)*r**2) * rm**6
+    return mask * rm**4 * (4 * r + 1)
+
+def wendland_d2_c4_rbf(r):
+    """
+    Wendland's C^4 RBF for d=2.
+    Compactly supported, twice continuously differentiable (C^4).
+    
+    Formula: (1 - r)^6_+ (35r^2 + 18r + 3)
+    """
+    mask = (r < 1).float()
+    rm = (1 - r).clamp(min=0.0)
+    return mask * rm**6 * (35 * r**2 + 18 * r + 3)
 
 def multiquadric_rbf(r):
     """Multiquadric RBF with compact support."""
@@ -25,7 +43,8 @@ def inverse_multiquadric_rbf(r):
 # Create an RBF function dictionary
 rbf_dict = {
     "gaussian": gaussian_rbf,
-    "wendland": wendland_rbf,
+    "wendland_d2_c2": wendland_d2_c2_rbf,
+    "wendland_d2_c4": wendland_d2_c4_rbf,
     "multiquadric": multiquadric_rbf,
     "inverse_multiquadric": inverse_multiquadric_rbf
 }
