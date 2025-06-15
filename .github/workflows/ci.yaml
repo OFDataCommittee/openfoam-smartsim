@@ -1,4 +1,4 @@
-name: smartredis
+name: tests_ubuntu
 defaults:
   run:
     shell: bash -o pipefail -i {0}
@@ -6,10 +6,11 @@ on:
   push:
     branches:
       - main
+      - ci
       - 'bugfix*'
       - 'releases/**'
   pull_request:
-    types: [opened, reopened]
+    types: [opened, reopened, synchronize]
   workflow_dispatch:
     inputs:
       debug_enabled:
@@ -20,23 +21,32 @@ on:
 
 jobs:
   build:
+    strategy:
+      fail-fast: false
+      matrix:
+        openfoam_version: ['2312', '2212']
+        smartsim_version: ['0.7.0', '0.6.2']
+        database_backend: ['redis']
+        ubuntu_version: ['22.04', '20.04'] ## SmartSim not available yet for Python 3.12 on Ubuntu 24
+        exclude:
+          - ubuntu_version: '20.04' ## SmartSim 0.7.0 not released on ubuntu 20.04
+            smartsim_version: '0.7.0'
     runs-on: ubuntu-22.04
 
     container:
-      image: ghcr.io/foamscience/openfoam-smartsim:cpu-2312
-      options: --user openfoam
+      image: ghcr.io/ofdatacommittee/openfoam-smartsim:of-${{ matrix.openfoam_version }}-smart-${{ matrix.smartsim_version }}-${{ matrix.database_backend }}-ubuntu-${{ matrix.ubuntu_version }}
       env:
         CATCH_TIMEOUT: 20
         FOAM_FOAMUT: "/tmp/foamUT"
-        SSDB: "redis:6379"
+        SSDB: "smartdb:6379"
 
     services:
-      redis:
-        image: redislabs/redisai
+      smartdb:
+        image: ${{ matrix.database_backend == 'redis' && 'redislabs/redisai' || 'eqalpha/keydb' }}
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
@@ -46,15 +56,15 @@ jobs:
 
       - name: Compile
         run: |
-          source /usr/lib/openfoam/openfoam2312/etc/bashrc
+          source /usr/lib/openfoam/openfoam${{ matrix.openfoam_version }}/etc/bashrc
           mkdir -p $FOAM_USER_LIBBIN
           ./Allwmake 
 
       - name: Compile Tests and Run
         run: |
-          source /usr/lib/openfoam/openfoam2312/etc/bashrc
+          source /usr/lib/openfoam/openfoam${{ matrix.openfoam_version }}/etc/bashrc
           ./Allwmake 
-          export SSDB="redis:6379"
+          export SSDB="smartdb:6379"
           git clone https://github.com/FoamScience/foamUT $FOAM_FOAMUT
           sed -i 's/mpirun/mpirun --oversubscribe/g' $FOAM_FOAMUT/Alltest
           ln -s "$PWD"/tests "$FOAM_FOAMUT"/tests/smartSimFOTests

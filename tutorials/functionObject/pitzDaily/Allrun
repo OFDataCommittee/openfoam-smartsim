@@ -1,0 +1,4 @@
+#!/usr/bin/bash
+export SSKEYIN=$SSKEYOUT
+blockMesh
+simpleFoam
