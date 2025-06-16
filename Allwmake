@@ -12,6 +12,7 @@ fi
 
 ## Compile SmartRedis libs
 export _REPO_ROOT="$(git rev-parse --show-toplevel)"
+echo $_REPO_ROOT
 cd "$_REPO_ROOT" || exit 1
 export FOAM_SMARTREDIS="$_REPO_ROOT/smartredis"
 if [ ! -d "$FOAM_SMARTREDIS" ]; then
@@ -46,7 +47,9 @@ export FOAM_CODE_TEMPLATES=$_REPO_ROOT/etc/dynamicCode/
 ## Compile OpenFOAM libs
 wmake libso src/smartRedis
 wmake libso src/functionObjects
-wmake libso src/displacementSmartSimMotionSolver
+wmake libso src/fvMotionSolvers/displacementLaplacianNonOrthMotionSolver
+wmake libso src/fvMotionSolvers/displacementSmartSimMotionSolver
+
 
 ## Compile OpenFOAM utilities
 wmake all applications 

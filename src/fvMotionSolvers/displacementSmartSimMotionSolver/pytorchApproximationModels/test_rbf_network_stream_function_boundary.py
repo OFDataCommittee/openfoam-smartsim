@@ -15,40 +15,42 @@ def velocity_u(x, y):
 def velocity_v(x, y):
     return -np.sin(2 * np.pi * x) * (np.sin(np.pi * y) ** 2) * np.pi
 
-def generate_boundary_points(num_rays, R, C):
-    theta = np.linspace(0, 2 * np.pi, num_rays, endpoint=False)
-
+def generate_boundary_points(num_circle_points, R, C, dist_factor=1.0):
+    """
+    Generate RBF centers:
+    - Inner circle: num_circle_points sampled uniformly in angle
+    - Outer domain boundary (square): sampled uniformly along each edge using
+      spacing derived from arc length * dist_factor
+    """
+    # --- Circle boundary sampling ---
+    theta = np.linspace(0, 2 * np.pi, num_circle_points, endpoint=False)
     circle_x = C[0] + R * np.cos(theta)
     circle_y = C[1] + R * np.sin(theta)
     circle_boundary = np.column_stack((circle_x, circle_y))
 
-    outer_boundary = []
-    for t in theta:
-        dx, dy = np.cos(t), np.sin(t)
-        intersections = []
+    # --- Outer boundary sampling ---
+    arc_spacing = (2 * np.pi * R) / num_circle_points
+    edge_spacing = dist_factor * arc_spacing
 
-        if dx != 0:
-            for x_edge in [0.0, 1.0]:
-                s = (x_edge - C[0]) / dx
-                y = C[1] + s * dy
-                if 0 <= y <= 1 and s > 0:
-                    intersections.append([x_edge, y])
-        if dy != 0:
-            for y_edge in [0.0, 1.0]:
-                s = (y_edge - C[1]) / dy
-                x = C[0] + s * dx
-                if 0 <= x <= 1 and s > 0:
-                    intersections.append([x, y_edge])
+    # Number of points along each edge (include both 0 and 1 → spacing = 1 / (n - 1))
+    num_edge_points = max(2, int(1.0 / edge_spacing) + 1)
+    edge_coords = np.linspace(0, 1, num_edge_points)
 
-        if intersections:
-            dists = [np.linalg.norm(np.array(p) - np.array(C)) for p in intersections]
-            outer_point = intersections[np.argmin(dists)]
-            outer_boundary.append(outer_point)
+    # Four edges of the square
+    left_edge   = np.column_stack((np.zeros_like(edge_coords), edge_coords))       # x = 0
+    right_edge  = np.column_stack((np.ones_like(edge_coords), edge_coords))        # x = 1
+    bottom_edge = np.column_stack((edge_coords, np.zeros_like(edge_coords)))       # y = 0
+    top_edge    = np.column_stack((edge_coords, np.ones_like(edge_coords)))        # y = 1
 
-    outer_boundary = np.array(outer_boundary)
-    boundary_points = np.vstack([outer_boundary, circle_boundary])
+    # Combine all square boundary points
+    square_boundary = np.vstack([left_edge, right_edge, bottom_edge, top_edge])
+
+    # Remove duplicates at corners
+    square_boundary = np.unique(square_boundary, axis=0)
+
+    # Combine both
+    boundary_points = np.vstack([square_boundary, circle_boundary])
     return torch.tensor(boundary_points, dtype=torch.float32)
-
 
 def filter_inside_circle(points, R, C):
     distances = np.sqrt((points[:, 0] - C[0]) ** 2 + (points[:, 1] - C[1]) ** 2)
@@ -109,7 +111,8 @@ def visualize_velocity_error_norm(x, y, u_pred, v_pred, rbf_type, centers, title
     s = s_max - (s_max - s_min) * (num_centers - num_min) / (num_max - num_min)
     s = max(s_min, min(s_max, s))
     centers_np = centers.numpy()
-    ax.scatter(centers_np[:, 0], centers_np[:, 1], color='k', marker='x', s=s, linewidths=2, label='Centers')
+    ax.scatter(centers_np[:, 0], centers_np[:, 1], color='red', 
+               marker='x', s=s, linewidths=2, label='Centers')
 
     ax.set_title(f"{title} {rbf_type.upper()} {num_centers}")
     ax.set_xlabel("x")
@@ -167,8 +170,14 @@ def main(num_points, rbf_type):
             if loss.item() < stop_loss:
                 break
 
+              # Print progress every 50 epochs
+            if epoch == 1 or (epoch + 1) % 50 == 0:
+                print(f'Epoch [{epoch + 1}/{epochs}], Loss: {loss.item():.14f}, Best Loss: {best_loss:.14f}')
+
         if best_model_state:
             model.load_state_dict(best_model_state)
+            print(f"Restored best model with loss: {best_loss:.14f}")
+
         model.eval()
         return model
 

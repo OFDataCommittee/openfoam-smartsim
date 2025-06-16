@@ -1,0 +1,130 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 | OpenFOAM: The Open Source CFD Toolbox           |
+| \\      /  F ield         | Version:  8                                     |
+|  \\    /   O peration     | www.openfoam.org                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      snappyHexMeshDict;
+}
+
+// Which steps to run
+castellatedMesh true;
+snap            true;
+addLayers       true;
+
+// Geometry definitions
+geometry
+{
+    sphere.stl
+    {
+        type triSurfaceMesh;
+        name outerSphere;
+    }
+    ellipsoid.stl
+    {
+        type triSurfaceMesh;
+        name innerEllipsoid;
+        // Ensure normals point into the shell volume; use insideOut if STL is oriented inward
+        insideOut true;
+    }
+}
+
+// Controls for castellated mesh
+castellatedMeshControls
+{
+    maxLocalCells        1000000;
+    maxGlobalCells       2000000;
+    minRefinementCells   10;
+    nCellsBetweenLevels  10;
+
+    // Surface-based refinement
+    refinementSurfaces
+    {
+        innerEllipsoid { level (3 4); }
+        outerSphere { level (1 2); }
+    }
+
+    // No region-based refinement; carving via insideOut
+    refinementRegions
+    {
+    }
+
+    // Feature edges (none)
+    features ();
+
+    // Resolve sharp features
+    resolveFeatureAngle 30;
+    // Allow independent zone faces
+    allowFreeStandingZoneFaces true;
+
+    // A single point inside shell region
+    // Point between ellipsoid and sphere — halfway along positive z-axis
+    // e.g. if sphere radius is 2 and ellipsoid max radius is 1, use (0 0 1.5)
+    locationInMesh (0 0 1.5);
+    
+}
+
+// Controls for snapping to surfaces
+snapControls
+{
+    nSmoothPatch         3;
+    tolerance            2.0;
+    nSolveIter           30;
+    nRelaxIter           5;
+    nFeatureSnap         10;
+    implicitFeatureSnap  false;
+    explicitFeatureSnap  true;
+    multiRegionFeatureSnap false;
+}
+
+// Controls for layer addition
+addLayersControls
+{
+    relativeSizes true;
+
+    layers
+    {
+        innerEllipsoid { nSurfaceLayers 5; }
+    }
+
+    expansionRatio            1.0;
+    finalLayerThickness       0.3;
+    minThickness              0.1;
+    nGrow                     0;
+    featureAngle              30;
+    nRelaxIter                3;
+    nSmoothSurfaceNormals     1;
+    nSmoothNormals            3;
+    nSmoothThickness          10;
+    maxFaceThicknessRatio     0.5;
+    maxThicknessToMedialRatio 0.3;
+    minMedialAxisAngle        90;
+    nBufferCellsNoExtrude     0;
+    nLayerIter                50;
+}
+
+// Controls for mesh quality
+meshQualityControls
+{
+    maxNonOrtho           65;
+    maxBoundarySkewness   20;
+    maxInternalSkewness   4;
+    maxConcave            80;
+    minVol                1e-13;
+    minTetQuality         1e-30;
+    minArea               -1;
+    minTwist              0.02;
+    minDeterminant        0.001;
+    minFaceWeight         0.02;
+    minVolRatio           0.01;
+    minTriangleTwist      -1;
+    nSmoothScale          4;
+    errorReduction        0.75;
+}
+
+// Merge tolerance for snapping
+mergeTolerance 1e-6;
