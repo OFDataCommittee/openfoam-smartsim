@@ -80,7 +80,7 @@ void Foam::displacementSmartSimMotionSolver::writeSolutionDimToDatabase()
 
 void Foam::displacementSmartSimMotionSolver::writeMeshPointsToDatabase() 
 {
-    const auto& meshPoints = fvMesh_.points();
+    const auto& meshPoints = points0(); //fvMesh_.points();
 
     if (solutionDim_ == 3) // 3D case
     {
@@ -204,54 +204,58 @@ void Foam::displacementSmartSimMotionSolver::solve()
     // Assemble and send boundary points and their displacements to SmartRedis 
 
     // - Agglomerate boundary points and displacements for the MPI rank
+
+    // TODO(TM,AS): move the points0 agglomeration and writing to writeMeshPointsToDatabase  
+    const pointField& points0 = this->points0(); // MOVE
     const auto& boundaryDisplacements = pointDisplacement().boundaryField();
     const auto& meshBoundary = motionSolver::mesh().boundaryMesh(); 
-    List<point> mpiRankPoints;
+    List<point> mpiRankPoints; // MOVE 
     List<vector> mpiRankDisplacements;
     forAll(boundaryDisplacements, patchI)
     {
         if (meshBoundary[patchI].type() == "empty"
-            || meshBoundary[patchI].type() == "processor")
+           || meshBoundary[patchI].type() == "processor")
         {
-            continue;
+           continue;
         }
 
-        const polyPatch& patch   = meshBoundary[patchI];
-        const pointField& pts    = patch.localPoints();
         tmp<vectorField> dispPtr = boundaryDisplacements[patchI].patchInternalField();
         const vectorField& disp  = dispPtr();
 
-        forAll(pts, i)
+        const polyPatch& patch   = meshBoundary[patchI]; // MOVE
+        const labelList& patchPointIds = patch.meshPoints();  // MOVE
+
+        forAll(patchPointIds, id)
         {
-            mpiRankPoints.append(pts[i]);
-            mpiRankDisplacements.append(disp[i]);
+            mpiRankPoints.append(points0[patchPointIds[id]]); // MOVE
+            mpiRankDisplacements.append(disp[id]);
         }
     }
 
-    // - Prepare lobal displacement and point lists for gather
-    List<List<point>>   globalPointListList(Pstream::nProcs());
+    // - Prepare global displacement and point lists for gather
+    List<List<point>>   globalPointListList(Pstream::nProcs()); // MOVE
     List<List<vector>>  globalDisplacementListList(Pstream::nProcs());
 
     // - Assign data in the lobal lists list from this MPI rank
-    globalPointListList[Pstream::myProcNo()] = mpiRankPoints;
+    globalPointListList[Pstream::myProcNo()] = mpiRankPoints; // MOVE
     globalDisplacementListList[Pstream::myProcNo()] = mpiRankDisplacements;
 
     // - Gather all data from all ranks at the main rank (0)
-    Pstream::gatherList(globalPointListList);
+    Pstream::gatherList(globalPointListList); // MOVE
     Pstream::gatherList(globalDisplacementListList);
 
     // - Send data to SmartRedis for ML model training from the main rank (0)
-    if (Pstream::myProcNo() == 0)
+    if (Pstream::myProcNo() == 0) 
     {
         // - Compute the global number of boundary points and displacements. 
-        label nGlobalBoundaryPoints = 0; 
-        forAll(globalPointListList, rankI)
+        label nGlobalBoundaryPoints = 0;  // MOVE
+        forAll(globalPointListList, rankI) // MOVE
         {
-            nGlobalBoundaryPoints += globalPointListList[rankI].size();
+            nGlobalBoundaryPoints += globalPointListList[rankI].size(); // MOVE
         }
         
         // - Resize agglomerated point and displacement data to equal size. 
-        boundaryPoints_.resize(nGlobalBoundaryPoints * solutionDim_);
+        boundaryPoints_.resize(nGlobalBoundaryPoints * solutionDim_); // MOVE
         boundaryDisplacements_.resize(nGlobalBoundaryPoints * solutionDim_);
 
         // - Agglomerate the gathered boundary List<List<vector>> points and
@@ -260,7 +264,7 @@ void Foam::displacementSmartSimMotionSolver::solve()
         forAll(globalPointListList, rankI)
         {
             // Get the list of points from each rank 
-            const List<point>& rankPoints = globalPointListList[rankI];
+            const List<point>& rankPoints = globalPointListList[rankI]; // MOVE
             // Get the list of displacements from each rank 
             const List<point>& rankDisplacements = globalDisplacementListList[rankI];
 
@@ -276,7 +280,7 @@ void Foam::displacementSmartSimMotionSolver::solve()
             {
                 forAll(validCmpts_, dimI)
                 {
-                    boundaryPoints_[globalCmptI] = rankPoints[pointI][validCmpts_[dimI]];
+                    boundaryPoints_[globalCmptI] = rankPoints[pointI][validCmpts_[dimI]]; // MOVE
                     boundaryDisplacements_[globalCmptI] = rankDisplacements[pointI][validCmpts_[dimI]];
                     ++globalCmptI;
                 }
@@ -284,7 +288,7 @@ void Foam::displacementSmartSimMotionSolver::solve()
         }
 
         // Send points to SmartRedis for ML model training.
-        client_.put_tensor(
+        client_.put_tensor( // MOVE
             "points",
             boundaryPoints_.data(), 
             {size_t(nGlobalBoundaryPoints), size_t(solutionDim_)},
@@ -310,7 +314,7 @@ void Foam::displacementSmartSimMotionSolver::solve()
     }
 
     // Refresh points_MPI_<rank> with current mesh points.
-    writeMeshPointsToDatabase();  // TODO(TM): can we remove this using points0 displacements?
+    // writeMeshPointsToDatabase();  // TODO(TM): can we remove this using points0 displacements?
 
     bool model_ready = client_.poll_key("model_ready", 1, 10000);
     if (! model_ready)

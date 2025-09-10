@@ -85,7 +85,7 @@ def train(num_mpi_ranks):
         mean_mag_displ = torch.mean(torch.norm(displ_train, dim=1))
         validation_rmse = []
         model.train()
-        epochs = 1000
+        epochs = 2000
         n_epochs = 0
         rmse_loss_val = 1
 
@@ -110,7 +110,7 @@ def train(num_mpi_ranks):
                 mse_loss_val = loss_func(displ_pred_val, displ_val)
                 rmse_loss_val = torch.sqrt(mse_loss_val)
                 validation_rmse.append(rmse_loss_val)
-                if (rmse_loss_val < 1e-04):
+                if (mse_loss_val < 1e-04):
                     break
     
         print (f"RMSE {validation_rmse[-1]}, number of epochs {n_epochs}")
