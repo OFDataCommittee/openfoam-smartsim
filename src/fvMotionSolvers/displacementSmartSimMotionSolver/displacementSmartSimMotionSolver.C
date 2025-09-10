@@ -309,6 +309,9 @@ void Foam::displacementSmartSimMotionSolver::solve()
         );
     }
 
+    // Refresh points_MPI_<rank> with current mesh points.
+    writeMeshPointsToDatabase();  // TODO(TM): can we remove this using points0 displacements?
+
     bool model_ready = client_.poll_key("model_ready", 1, 10000);
     if (! model_ready)
     {
