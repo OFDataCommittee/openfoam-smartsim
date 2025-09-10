@@ -1,0 +1,19 @@
+#!/bin/sh
+cd "${0%/*}" || exit                                # Run from this directory
+. ${WM_PROJECT_DIR:?}/bin/tools/RunFunctions        # Tutorial run functions
+#------------------------------------------------------------------------------
+
+restore0Dir
+
+# Create the mesh
+gmsh -2 constant/triSurface/ellipsoid-surface.geo
+gmsh -2 constant/triSurface/sphere-surface.geo
+
+blockMesh 
+
+snappyHexMesh -overwrite
+
+# Decompose the mesh 
+decomposePar -force
+
+#------------------------------------------------------------------------------

@@ -1,0 +1,28 @@
+#!/bin/sh
+cd "${0%/*}" || exit                                # Run from this directory
+. ${WM_PROJECT_DIR:?}/bin/tools/RunFunctions        # Tutorial run functions
+#------------------------------------------------------------------------------
+
+# Clean before running
+./Allclean
+
+# Create the mesh
+./Allrun.mesh
+
+# Deform the mesh 
+runParallel $(getApplication)
+
+# Compute the mesh quality fields 
+runParallel checkMesh -writeFields '(nonOrthoAngle skewness)'
+
+# Sample the mesh quality fields
+runParallel postProcess -fields '(nonOrthoAngle skewness)' \
+    -func fieldMinMax -noZero
+
+# Generate plots of mesh quality samples 
+python post_process.py
+
+# Enable visualization in ParaView
+touch ${PWD##*/}.foam
+
+#------------------------------------------------------------------------------

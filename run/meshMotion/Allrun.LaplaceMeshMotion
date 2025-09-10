@@ -1,0 +1,20 @@
+#!/bin/sh
+cd "${0%/*}" || exit                                # Run from this directory
+. ${WM_PROJECT_DIR:?}/bin/tools/RunFunctions        # Tutorial run functions
+#------------------------------------------------------------------------------
+
+
+rm -rf ellipsoid3D_LaplaceMeshMotion
+
+echo Deform the mesh with constant/dynamicMesh.Laplace settings and moveDynamicMesh 
+(
+    cp -r ellipsoid3D ellipsoid3D_LaplaceMeshMotion 
+
+    cd ellipsoid3D_LaplaceMeshMotion
+
+    cp constant/dynamicMeshDict.Laplace constant/dynamicMeshDict
+    
+    ./Allrun
+)
+
+#------------------------------------------------------------------------------

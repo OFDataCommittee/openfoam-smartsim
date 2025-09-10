@@ -69,9 +69,28 @@ class displacementSmartSimMotionSolver
     
         //- Set to false if not using a clustered database 
         bool clusterMode_;
-        
+
         //- SmartRedis Database Client
         SmartRedis::Client client_;
+        
+        //- Spatial dimension - necessary for CFD+ML dimension consistency.
+        //- OpenFOAM ignores simply components in pseudo 2D cases; NNs cannot 
+        //  be trained on components whose values are all constant (zeros).
+        const label solutionDim_; 
+
+        // - Which vector components correspond to solution dimensions:
+        //   fvMesh::solutionD() = [1, 0, 1] -> solutionComponents_ = [0, 2]
+        const labelList validCmpts_; 
+
+        // - SmartRedis tensor names for ML inference for each MPI rank. 
+        const word rankMeshPointsName_;
+        const word rankMeshDisplacementsName_;
+        
+        // - Flattened boundary points sent to SmartRedis for ML 
+        std::vector<double> boundaryPoints_; 
+
+        // - Flattened boundary displacements sent to SmartRedis for ML
+        std::vector<double> boundaryDisplacements_;
 
         //- No copy construct
         displacementSmartSimMotionSolver
@@ -81,6 +100,11 @@ class displacementSmartSimMotionSolver
 
         //- No copy assignment
         void operator=(const displacementSmartSimMotionSolver&) = delete;
+
+        static labelList filterValidCmpts(const Vector<label>& solutionDim);
+
+        void writeSolutionDimToDatabase(); 
+        void writeMeshPointsToDatabase(); 
 
 public:
 

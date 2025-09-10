@@ -3,18 +3,14 @@ cd "${0%/*}" || exit                                # Run from this directory
 . ${WM_PROJECT_DIR:?}/bin/tools/RunFunctions        # Tutorial run functions
 #------------------------------------------------------------------------------
 
-./Allclean
 
-./Allrun.pre
 
-rm -rf mesh-motion_Laplace
-
-echo Use the constant/dynamicMesh.laplace settings and run the solver locally
+echo Copy the template case and set dynamicMesh for Machine Learning 
 (
-    cd wingMotion2D_pimpleFoam || exit
+    cp -r ellipsoid3D  
     
     echo Set mesh motion settings to Laplace mesh motion
-    cp constant/dynamicMeshDict.LaplaceMeshMotion constant/dynamicMeshDict
+    cp constant/dynamicMeshDict.MachineLearningMeshMotion constant/dynamicMeshDict
 
     runParallel $(getApplication)
 

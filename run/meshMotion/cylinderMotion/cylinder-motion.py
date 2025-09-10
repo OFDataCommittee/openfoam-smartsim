@@ -112,6 +112,9 @@ try:
     
     # Make sure all datasets are avaialble in the smartredis database.
     local_time_index = 1
+    learning_rate = 1e-02
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+
     while True:
 
         print (f"Time step {local_time_index}")
@@ -178,9 +181,9 @@ try:
                                                                             test_size=0.2, random_state=42)
 
         # PYTORCH Training Loop
-        optimizer = optim.Adam(model.parameters(), lr=1e-04)
         loss_func = nn.MSELoss()
-        epochs = 10000
+        epochs = 100000
+        n_epochs = 0 
         mean_mag_displ = torch.mean(torch.norm(displ_train, dim=1))
         validation_rmse = []
         model.train()
@@ -199,12 +202,16 @@ try:
             optimizer.step()
 
             # Forward pass on the validation data, with torch.no_grad() for efficiency
+            n_epochs = n_epochs + 1
             with torch.no_grad():
                 displ_pred_val = model(points_val)
                 mse_loss_val = loss_func(displ_pred_val, displ_val)
                 rmse_loss_val = torch.sqrt(mse_loss_val)
                 validation_rmse.append(rmse_loss_val)
+                if (rmse_loss_val < 1e-03):
+                    break
 
+        print (f"RMSE {validation_rmse[-1]}, number of epochs {n_epochs}")
         # Visualize validation RMSE
         #plt.loglog()
         #plt.title("Validation loss RMSE")
@@ -235,7 +242,7 @@ try:
         # Update time index
         local_time_index = local_time_index + 1
 
-        if client.poll_key("end_time_index", 10, 10):
+        if client.poll_key("end_time_index", 10, 100):
             print ("End time reached.")
             break
     

@@ -7,7 +7,8 @@ import csv
 import pandas as pd
 import os
 
-from rbf_network import rbf_dict, RadialBasisFunctionNetwork 
+#from rbf_network import rbf_dict, RadialBasisFunctionNetwork, RadialBasisFunctionNetworkAdaptive
+from rbf_network import * 
 
 def psi(x, y):
     """
@@ -28,7 +29,7 @@ def visualize_psi(x, y, psi_values, rbf_type, centers, title):
     plt.figure(figsize=(6, 6))
     plt.contourf(x, y, psi_values, levels=20, cmap='viridis')
     plt.colorbar(label='ψ')
-    plt.title(title + f"-rbf_type_{rbf_type}-num_centers_{len(centers)}")
+    plt.title(title + f" rbf_type_{rbf_type} n-centers {len(centers)}")
     plt.xlabel('x')
     plt.ylabel('y')
     plt.grid()
@@ -124,10 +125,12 @@ def main(num_points, rbf_type):
 
     # Gaussian 3d-order support
     #r_max = 2.5 / num_points 
-    r_max = 2.5 / num_points 
+    r_max = 2.0 / (num_points - 1) 
 
     # Initialize model
-    model = RadialBasisFunctionNetwork(centers, r_max, rbf_dict, rbf_type=rbf_type)
+    model = RadialBasisFunctionNetwork(
+        centers, r_max, rbf_dict, rbf_type=rbf_type
+    )
 
     # Optimizer and loss
     optimizer = optim.Adam(model.parameters(), lr=0.05)
@@ -137,7 +140,7 @@ def main(num_points, rbf_type):
     epochs = 4000
     best_loss = float("inf")  # Initialize best loss to a large value
     best_model_state = None  # Store best model state
-    stop_loss = 1e-08
+    stop_loss = 1e-11
 
     for epoch in range(epochs):
         model.train()
@@ -165,6 +168,12 @@ def main(num_points, rbf_type):
     if best_model_state:
         model.load_state_dict(best_model_state)
         print(f"Restored best model with loss: {best_loss:.14f}")
+
+    with torch.no_grad():
+        y_pred_train = model(x_train)
+        error_at_centers = torch.abs(y_pred_train - y_train)
+        print("Max training error:", error_at_centers.max().item())
+        print("Mean training error:", error_at_centers.mean().item())
 
     # Save the best model to file
     torch.save(best_model_state, "best_rbf_model.pth")
@@ -195,7 +204,7 @@ def main(num_points, rbf_type):
 
     err_val = np.abs(psi_pred - psi_val) / np.max(psi_val)
     visualize_psi(X_val, Y_val, err_val, rbf_type, centers,
-                  title="Stream Function Relative Error")
+                  title="Relative Error")
 
     # Define the filename
     csv_filename = "stream_function_validation.csv"
@@ -236,7 +245,7 @@ if __name__ == "__main__":
 
     # Run the parameter study 
     for rbf_type in ["gaussian"]:
-        for num_points in [4,8,16,32]:
+        for num_points in [4,8,16]:
             main(num_points, rbf_type)
 
     # Estimate convergence order

@@ -1,0 +1,43 @@
+#!/bin/sh
+cd "${0%/*}" || exit                                # Run from this directory
+. ${WM_PROJECT_DIR:?}/bin/tools/RunFunctions        # Tutorial run functions
+#------------------------------------------------------------------------------
+
+rm -rf ellipsoid3D_MachineLearningMeshMotionInput
+rm -rf ellipsoid3D_MachineLearningMeshMotion
+
+echo Create the machine learning mesh motion case
+(
+    cp -r ellipsoid3D ellipsoid3D_MachineLearningMeshMotionInput
+
+    cd ellipsoid3D_MachineLearningMeshMotionInput
+
+    echo Create .foam file for visualization in ParaView 
+    touch ellipsoid3D_MachineLearningMeshMotion.foam
+    
+    echo Set mesh motion settings to MachineLearning mesh motion
+    cp constant/dynamicMeshDict.smartsim constant/dynamicMeshDict
+
+    echo Mesh and decompose the domain
+    ./Allrun.mesh
+
+    cd ..
+
+    echo Run the smartsim_driver that coordinates Machine Learning and CFD 
+    python smartsim_driver.py --experiment ellipsoid3D_MachineLearningMeshMotion \
+        --case ellipsoid3D_MachineLearningMeshMotionInput
+
+    cd ellipsoid3D_MachineLearningMeshMotion/ellipsoid3D_MachineLearningMeshMotionInput
+
+    # Compute the mesh quality fields 
+    runParallel checkMesh -writeFields '(nonOrthoAngle skewness)'
+    
+    # Sample the mesh quality fields
+    runParallel postProcess -fields '(nonOrthoAngle skewness)' \
+        -func fieldMinMax -noZero
+    
+    # Generate plots of mesh quality samples 
+    python post_process.py
+)
+
+#------------------------------------------------------------------------------

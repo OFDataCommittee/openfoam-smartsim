@@ -20,7 +20,7 @@ r       1;
 a       #eval{1./sqrt(2)*$r};
 b       #eval{3*$r};
 
-n       16;
+n       64;
 
 vertices
 (
