@@ -16,13 +16,13 @@ field_name = "U"
 client = Client(cluster=False)
 
 # compute global left singular vectors
-Ui = client.get_tensor(f"svd_ensemble_{mpi_rank}.partSVD_U_mpi_rank_{mpi_rank}")
+Ui = client.get_tensor(f"svd_ensemble_r{svd_rank}_{mpi_rank}.partSVD_U_mpi_rank_{mpi_rank}")
 Uy = client.get_tensor(f"partSVD_Uy")
 n_times = Ui.shape[1]
 U = (Ui @ Uy[mpi_rank*n_times:(mpi_rank+1)*n_times])[:, :svd_rank]
 
 # optional: delete Ui from the database to save space
-client.delete_tensor(f"svd_ensemble_{mpi_rank}.partSVD_U_mpi_rank_{mpi_rank}")
+client.delete_tensor(f"svd_ensemble_r{svd_rank}_{mpi_rank}.partSVD_U_mpi_rank_{mpi_rank}")
 
 # compute and save rank-r reconstruction
 s = client.get_tensor(f"partSVD_sy")[:svd_rank]
