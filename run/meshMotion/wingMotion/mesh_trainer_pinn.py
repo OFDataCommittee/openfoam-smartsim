@@ -20,7 +20,6 @@ class EarlyStopping:
         patience: int = 40,
         min_delta: float = 1.0e-4,
         model: Union[nn.Module, None] = None,
-        target_loss: float = 1e-4,
     ):
         self._patience = patience
         self._min_delta = min_delta
@@ -29,17 +28,10 @@ class EarlyStopping:
         self._counter = 0
         self._stop = False
         self._model_buffer = None
-        # self._target_loss = target_loss
-        
+        self._model_script = None
 
     def __call__(self, loss: float) -> bool:
         """Check if training should stop."""
-        # 阈值停止
-        # if loss <= self._target_loss:
-        #     print(f"[EarlyStopping] Target loss reached: {loss:.6e}")
-        #     self._stop = True
-        #     return self._stop
-
         if loss < self._best_loss * (1.0 - self._min_delta):
             self._best_loss = loss
             self._counter = 0
@@ -59,14 +51,20 @@ class EarlyStopping:
         self._stop = False
 
     def save_model(self):
-        self._model_buffer = io.BytesIO()
-        self._model.eval() # TEST
-        # Prepare a sample input
-        example_forward_input = torch.rand(2).to(device)
-        # Convert the PyTorch model to TorchScript
-        model_script = torch.jit.trace(self._model, example_forward_input)
-        # Save the TorchScript model to a buffer
-        torch.jit.save(model_script, self._model_buffer)
+        self._model.eval()
+        with io.BytesIO() as buffer:
+            
+            if self._model_buffer:
+                self._model_buffer = None
+
+            # save the model in the buffer
+            example_forward_input = torch.rand(2).to(device)
+
+            # Convert the PyTorch model to TorchScript
+            if self._model_script is None:
+                self._model_script = torch.jit.trace(self._model, example_forward_input)
+            torch.jit.save(self._model_script, buffer)
+            self._model_buffer = buffer.getvalue()
 
 class MLP(nn.Module):
     def __init__(self, num_layers, layer_width, input_size, output_size, activation_fn):
@@ -143,9 +141,13 @@ def train(num_mpi_ranks):
     # Initialize the model
     model = MLP(num_layers=3, layer_width=50, input_size=2, output_size=2, activation_fn=torch.nn.Tanh()).to(device)
     
-    # Initialize the optimizer (removed adaptive weight parameters)
+    # Initialize the optimizer
     learning_rate = 1e-03
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+    
+    # # L-BFGS optimizer (currently active)
+    # optimizer = optim.LBFGS(model.parameters(), lr=1.0, max_iter=20, tolerance_grad=1e-7, tolerance_change=1e-9, history_size=100)
+
     early_stopper = EarlyStopping(
         patience=50,
         min_delta=1e-3,
@@ -154,6 +156,8 @@ def train(num_mpi_ranks):
     # Make sure all datasets are avaialble in the smartredis database.
     local_time_index = 1
     while True:    
+        
+        print (f"Time step {local_time_index}")
         # Fetch datasets from SmartRedis
     
         # - Poll until the points datasets are written by OpenFOAM
@@ -224,7 +228,7 @@ def train(num_mpi_ranks):
         loss_func = nn.MSELoss()
       
         model.train()
-        epochs = 5000
+        epochs = 100000
         n_epochs = 0
         rmse_loss_val = 1
         
@@ -248,8 +252,30 @@ def train(num_mpi_ranks):
             # Backward pass and optimization
             loss_train.backward()
             optimizer.step()
-            # data_loss_list.append(data_loss.item())
-            # pinn_loss_list.append(p_loss.item())
+
+        # for epoch in range(epochs):
+        #     # Define closure function for L-BFGS
+        #     def closure():
+        #         optimizer.zero_grad()
+                
+        #         # Forward pass on the training data
+        #         displ_pred = model(points_train)
+        
+        #         # Compute loss on the training data with annealed weight
+        #         data_loss = loss_func(displ_pred, displ_train)
+        #         p_loss = pinn_loss(points_train, displ_pred)
+                
+        #         # Annealed weight: start with high physics weight, gradually decrease
+        #         # Physics weight decreases from 1.0 to 0.01 over training
+        #         physics_weight = max(0.01, 1.0 * (1.0 - epoch / epochs))
+        #         data_weight = 1.0
+                
+        #         loss_train = data_weight * data_loss + physics_weight * p_loss
+        #         loss_train.backward()
+        #         return loss_train
+            
+        #     # L-BFGS optimization step
+        #     optimizer.step(closure)
 
             n_epochs = n_epochs + 1
             # Forward pass on the validation data, with torch.no_grad() for efficiency
@@ -272,7 +298,7 @@ def train(num_mpi_ranks):
             #     print(f"  Validation RMSE: {rmse_loss_val:.6e}")
 
         # Store the model into SmartRedis
-        client.set_model("MLP", early_stopper._model_buffer.getvalue(), "TORCH", "GPU")
+        client.set_model("MLP", early_stopper._model_buffer, "TORCH", "CPU")
     
         # Update the model in smartredis
         client.put_tensor("model_updated", np.array([0.]))
@@ -283,7 +309,6 @@ def train(num_mpi_ranks):
 
         # Update time index
         local_time_index = local_time_index + 1
-    
         if client.poll_key("end_time_index", 10, 10):
             print ("End time reached.")
             break
