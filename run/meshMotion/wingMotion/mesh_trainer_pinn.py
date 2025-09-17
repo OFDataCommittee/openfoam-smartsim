@@ -249,7 +249,12 @@ def train(num_mpi_ranks):
             data_weight = 1.0
             
             loss_train = data_weight * data_loss + physics_weight * p_loss
-            print(f"data loss: {data_loss}, physics loss: {p_loss}")
+            print(
+                f"[Epoch {epoch}/{epochs}] "
+                f"data loss: {data_loss.item():.6f}, "
+                f"physics loss: {p_loss.item():.6f}, "
+                f"physics_weight: {physics_weight:.4f}"
+            )
             # Backward pass and optimization
             loss_train.backward()
             optimizer.step()

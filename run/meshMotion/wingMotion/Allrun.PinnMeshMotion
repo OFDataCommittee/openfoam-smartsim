@@ -19,7 +19,7 @@ echo Use the constant/dynamicMesh.laplace settings and run the solver locally
 
     cd ..
 
-    echo Run the SmartSim python script that implements the ML+CFD algorithm
+    echo Run the SmartSim python script that implements the Pinn+CFD algorithm
     python openfoam-smartsim-wingmotion_pinn.py 
 
     echo Copy data for comparison
