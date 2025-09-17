@@ -139,10 +139,10 @@ def train(num_mpi_ranks):
     torch.set_default_dtype(torch.float64)
     
     # Initialize the model
-    model = MLP(num_layers=3, layer_width=50, input_size=2, output_size=2, activation_fn=torch.nn.Tanh()).to(device)
+    model = MLP(num_layers=3, layer_width=50, input_size=2, output_size=2, activation_fn=torch.nn.ReLU()).to(device)
     
     # Initialize the optimizer
-    learning_rate = 1e-03
+    learning_rate = 1e-04
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     
     # # L-BFGS optimizer (currently active)
@@ -228,7 +228,7 @@ def train(num_mpi_ranks):
         loss_func = nn.MSELoss()
       
         model.train()
-        epochs = 100000
+        epochs = 5000
         n_epochs = 0
         rmse_loss_val = 1
         
@@ -244,11 +244,12 @@ def train(num_mpi_ranks):
             p_loss = pinn_loss(points_train, displ_pred)
             
             # Annealed weight: start with high physics weight, gradually decrease
-            # Physics weight decreases from 1.0 to 0.01 over training
-            physics_weight = max(0.01, 1.0 * (1.0 - epoch / epochs))
+            # Physics weight increase from 0.01 to 0.1 over training
+            physics_weight = max(0.0001, 0.001 * epoch / epochs + 0.0001)
             data_weight = 1.0
             
             loss_train = data_weight * data_loss + physics_weight * p_loss
+            print(f"data loss: {data_loss}, physics loss: {p_loss}")
             # Backward pass and optimization
             loss_train.backward()
             optimizer.step()
