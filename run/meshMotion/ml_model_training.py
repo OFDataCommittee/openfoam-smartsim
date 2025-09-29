@@ -5,7 +5,7 @@ import torch.nn as nn
 import numpy as np
 import io
 from sklearn.model_selection import train_test_split
-import torch.optim as optim 
+import torch.optim as optim
 import time
 from typing import Tuple, Union
 from matplotlib import pyplot as plt
@@ -30,7 +30,14 @@ class MLP(nn.Module):
     def forward(self, x):
         return self.layers(x)
 
-def train(num_mpi_ranks):
+def loss_weighted_center(y_true, y_pred, weights, weights_power):
+    weights_normed = torch.pow(weights, weights_power)
+    weights_normed = weights_normed/torch.sum(weights_normed)
+
+    return torch.sum(torch.sum((y_true-y_pred)**2, dim=1)*weights_normed)
+
+
+def train(args):
     client = Client()
     torch.set_default_dtype(torch.float64)
 
@@ -38,24 +45,24 @@ def train(num_mpi_ranks):
     dimension = int(client.get_tensor("solution_dim"))
 
     print (f"Solution dimension = {dimension}.")
-    
+
     # Initialize the model
     model = MLP(
-        num_layers=3, 
-        layer_width=50, 
-        input_size=dimension, 
-        output_size=dimension, 
-        activation_fn=torch.nn.ReLU()
+        num_layers=3,
+        layer_width=10,
+        input_size=dimension,
+        output_size=dimension,
+        activation_fn=torch.nn.ELU()
     )
 
     # Initialize the optimizer
-    learning_rate = 1e-03
+    learning_rate = 1e-3
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-    
+
     # Make sure all datasets are avaialble in the smartredis database.
     iteration = 1
     while True:
-    
+
         print (f"Iteration {iteration}")
 
         data_ready = client.poll_key("data_ready", 1, 10000)
@@ -64,66 +71,60 @@ def train(num_mpi_ranks):
 
         points = client.get_tensor("points")
         displacements = client.get_tensor("displacements")
+
         client.delete_tensor("data_ready")
 
-        # Split training and validation data 
-        points_train, points_val, displ_train, displ_val = train_test_split(
-            points,
-            displacements,
-            test_size=0.2,
-            random_state=42
-        )
+        X = torch.from_numpy(points).to(torch.float64)
+        y = torch.from_numpy(displacements).to(torch.float64)
 
-        # Convert to torch.Tensor 
-        points_train = torch.from_numpy(points_train).to(torch.float64)
-        points_val   = torch.from_numpy(points_val).to(torch.float64)
-        displ_train  = torch.from_numpy(displ_train).to(torch.float64)
-        displ_val    = torch.from_numpy(displ_val).to(torch.float64)
-    
-        loss_func = nn.MSELoss()
-      
-        mean_mag_displ = torch.mean(torch.norm(displ_train, dim=1))
+        # Find the center of the shape as the average of all the points on the inner boundary
+        r = torch.sqrt(torch.sum(X**2, dim=1))
+        inner = r < 5
+        center = torch.mean(X[inner], dim=0)
+
+        dist = torch.sqrt(torch.sum((X-center)**2, dim=1))
+        wts = dist/torch.sum(dist)
+
         validation_rmse = []
         model.train()
-        epochs = 2000
+        epochs = 5000
         n_epochs = 0
-        rmse_loss_val = 1
 
-        for epoch in range(epochs):    
+        for epoch in range(epochs):
             # Zero the gradients
             optimizer.zero_grad()
-    
+
             # Forward pass on the training data
-            displ_pred = model(points_train)
-    
+            displ_pred = model(X)
+
             # Compute loss on the training data
-            loss_train = loss_func(displ_pred, displ_train)
-    
+            loss_train = loss_weighted_center(displ_pred, y, wts, args.radius_power)
+
+            if (loss_train < 5e-05):
+                break
+
             # Backward pass and optimization
             loss_train.backward()
             optimizer.step()
 
             n_epochs = n_epochs + 1
-            # Forward pass on the validation data, with torch.no_grad() for efficiency
-            with torch.no_grad():
-                displ_pred_val = model(points_val)
-                mse_loss_val = loss_func(displ_pred_val, displ_val)
-                rmse_loss_val = torch.sqrt(mse_loss_val)
-                validation_rmse.append(rmse_loss_val)
-                if (mse_loss_val < 1e-04):
-                    break
-    
-        print (f"RMSE {validation_rmse[-1]}, number of epochs {n_epochs}")
+
+        print (f"MSE {loss_train.item()}, number of epochs {n_epochs}", flush=True)
+        np.savez(
+            f"data_{iteration:02d}.npz",
+            points=points,
+            displacements=displacements,
+        )
 
         # Uncomment to visualize validation RMSE
         plt.loglog()
         plt.title("Validation loss RMSE")
         plt.xlabel("Epochs")
         plt.plot(validation_rmse)
-        plt.savefig(f"validation_rmse_{epoch:04d}.png")
-    
+        plt.savefig(f"validation_rmse_{iteration:04d}.png")
+
         # Store the model into SmartRedis
-        # Put the model in evaluation mode. 
+        # Put the model in evaluation mode.
         model.eval() # TEST
         # Prepare a sample input
         example_forward_input = torch.rand(dimension)
@@ -136,11 +137,11 @@ def train(num_mpi_ranks):
         print("Saving model")
         client.set_model("model", model_buffer.getvalue(), "TORCH", "CPU")
         client.put_tensor("model_ready", np.array([0]))
-    
-        # Increase CFD+ML iteration 
+
+        # Increase CFD+ML iteration
         iteration = iteration + 1
 
-        # Check final iteration index and break 
+        # Check final iteration index and break
         if client.poll_key("final_iteration", 10, 10):
            print ("final iteration reached.")
            break
@@ -148,6 +149,7 @@ def train(num_mpi_ranks):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Training script for mesh motion")
     parser.add_argument("mpi_ranks", help="number of mpi ranks", type=int)
+    parser.add_argument("radius_power", help="power law to weight losses", type=float)
     args = parser.parse_args()
 
-    train(args.mpi_ranks)
+    train(args)
