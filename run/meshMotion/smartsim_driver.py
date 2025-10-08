@@ -57,10 +57,10 @@ def main(args):
     openfoam_rs = exp.create_run_settings(
         exe="moveDynamicMesh",
         exe_args="-parallel",
+        run_command="mpirun"
     )
     openfoam_rs.set_tasks(num_mpi_ranks)
     openfoam_rs.set_nodes(1)
-    openfoam_rs.set("exclusive")
 
     # Create the model from the OpenFOAM case argument
     openfoam_model = exp.create_model(
@@ -75,7 +75,7 @@ def main(args):
 
     training_rs = exp.create_run_settings(
         exe="python",
-        exe_args=f"ml_model_training.py {num_mpi_ranks} {args.radius_power}"
+        exe_args=f"ml_model_training.py {num_mpi_ranks} {args.radius_power} mlp"
     )
     training_rs.set_tasks(1)
     training_rs.set_nodes(1)
@@ -84,7 +84,9 @@ def main(args):
         name="ml_model_training",
         run_settings=training_rs
     )
-    ml_model_training.attach_generator_files(to_copy="ml_model_training.py")
+    ml_model_training.attach_generator_files(
+        to_copy=["ml_model_training.py", "networks/MLP.py"]
+    )
 
     exp.generate(ml_model_training, overwrite=True)
 
