@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2023 Tomislav Maric, TU Darmstadt 
+    Copyright (C) 2023 Tomislav Maric, TU Darmstadt
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -56,12 +56,12 @@ namespace Foam
     );
 }
 
-Foam::labelList Foam::displacementSmartSimMotionSolver::filterValidCmpts(const Vector<label>& dims) 
+Foam::labelList Foam::displacementSmartSimMotionSolver::filterValidCmpts(const Vector<label>& dims)
 {
-    labelList valid; 
+    labelList valid;
 
-    forAll(dims, dI) 
-        if (dims[dI] == 1)  // Active solution dimension in OpenFOAM 
+    forAll(dims, dI)
+        if (dims[dI] == 1)  // Active solution dimension in OpenFOAM
             valid.push_back(dI); // Valid dimension 0 (x), 1 (y), or 2 (z)
 
     return valid;
@@ -69,27 +69,27 @@ Foam::labelList Foam::displacementSmartSimMotionSolver::filterValidCmpts(const V
 
 // * * * * * * * * * * * * * Private Member Functions * * * * * * * * * * * * * * //
 
-void Foam::displacementSmartSimMotionSolver::writeSolutionDimToDatabase() 
+void Foam::displacementSmartSimMotionSolver::writeSolutionDimToDatabase()
 {
     client_.put_tensor("solution_dim",
-                        &solutionDim_, 
+                        &solutionDim_,
                         {1},
-                        SRTensorTypeInt32, 
+                        SRTensorTypeInt32,
                         SRMemLayoutContiguous);
 }
 
-void Foam::displacementSmartSimMotionSolver::writeMeshPointsToDatabase() 
+void Foam::displacementSmartSimMotionSolver::writeMeshPointsToDatabase()
 {
     const auto& meshPoints = points0(); //fvMesh_.points();
 
     if (solutionDim_ == 3) // 3D case
     {
         // Send existing 3D mesh points for forward inference: nPoints,
-        // dim=3. Saves time and memory in avoiding to create a 2D point buffer. 
+        // dim=3. Saves time and memory in avoiding to create a 2D point buffer.
         client_.put_tensor(rankMeshPointsName_,
-                           meshPoints.cdata(), 
+                           meshPoints.cdata(),
                            {size_t(meshPoints.size()), 3},
-                           SRTensorTypeDouble, 
+                           SRTensorTypeDouble,
                            SRMemLayoutContiguous);
     }
     else if (solutionDim_ == 2) // OpenFOAM pseudo 2D case
@@ -105,14 +105,81 @@ void Foam::displacementSmartSimMotionSolver::writeMeshPointsToDatabase()
             // 3D meshPoint data.
             points2D[2*pointI] = meshPoints[pointI][validCmpts_[0]];
             points2D[2*pointI + 1] = meshPoints[pointI][validCmpts_[1]];
-        } 
+        }
 
         // Send points2D to SmartRedis
         client_.put_tensor(
             rankMeshPointsName_,
-            points2D.data(), 
+            points2D.data(),
             {size_t(meshPoints.size()), size_t(solutionDim_)},
-            SRTensorTypeDouble, 
+            SRTensorTypeDouble,
+            SRMemLayoutContiguous
+        );
+    }
+}
+
+void Foam::displacementSmartSimMotionSolver::writeBoundaryPointsToDatabase()
+{
+    const pointField& points0 = this->points0();
+    List<point> mpiRankPoints;
+    const auto& meshBoundary = motionSolver::mesh().boundaryMesh();
+    const auto& boundaryDisplacements = pointDisplacement().boundaryField();
+    // Aggregate all points on the boundaries
+    forAll(boundaryDisplacements, patchI)
+    {
+        if (meshBoundary[patchI].type() == "empty"
+           || meshBoundary[patchI].type() == "processor")
+        {
+           continue;
+        }
+
+        const polyPatch& patch   = meshBoundary[patchI];
+        const labelList& patchPointIds = patch.meshPoints();
+
+        forAll(patchPointIds, id)
+        {
+            mpiRankPoints.append(points0[patchPointIds[id]]);
+        }
+    }
+
+    List<List<point>>   globalPointListList(Pstream::nProcs());
+    globalPointListList[Pstream::myProcNo()] = mpiRankPoints;
+    Pstream::gatherList(globalPointListList);
+
+    // - Send data to SmartRedis for ML model training from the main rank (0)
+    if (Pstream::myProcNo() == 0)
+    {
+        // - Compute the global number of boundary points and displacements.
+        label nGlobalBoundaryPoints = 0;
+        forAll(globalPointListList, rankI)
+        {
+            nGlobalBoundaryPoints += globalPointListList[rankI].size();
+        }
+        // - Resize agglomerated point and displacement data to equal size.
+        boundaryPoints_.resize(nGlobalBoundaryPoints * solutionDim_);
+
+        // - Agglomerate the gathered boundary List<List<vector>> points and
+        // displacements into boundaryPoints_ and boundaryDisplacements_ attributes.
+        label globalCmptI = 0;
+        forAll(globalPointListList, rankI)
+        {
+            // Get the list of points from each rank
+            const List<point>& rankPoints = globalPointListList[rankI];
+            forAll(rankPoints, pointI)
+            {
+                forAll(validCmpts_, dimI)
+                {
+                    boundaryPoints_[globalCmptI] = rankPoints[pointI][validCmpts_[dimI]];
+                    ++globalCmptI;
+                }
+            }
+        }
+        // Send points to SmartRedis for ML model training.
+        client_.put_tensor(
+            "points",
+            boundaryPoints_.data(),
+            {size_t(nGlobalBoundaryPoints), size_t(solutionDim_)},
+            SRTensorTypeDouble,
             SRMemLayoutContiguous
         );
     }
@@ -128,23 +195,24 @@ Foam::displacementSmartSimMotionSolver::displacementSmartSimMotionSolver
 :
     displacementMotionSolver(mesh, dict, typeName),
     fvMotionSolver(mesh),
-    clusterMode_(this->coeffDict().get<bool>("clusterMode")), 
-    client_(clusterMode_), 
+    clusterMode_(this->coeffDict().get<bool>("clusterMode")),
+    client_(clusterMode_),
     solutionDim_(
-        std::accumulate( 
-            fvMesh_.solutionD().cbegin(),   
-            fvMesh_.solutionD().cend(),     
-            0                               
+        std::accumulate(
+            fvMesh_.solutionD().cbegin(),
+            fvMesh_.solutionD().cend(),
+            0
         )
     ),
     validCmpts_(filterValidCmpts(fvMesh_.solutionD())),
     rankMeshPointsName_("points_MPI_" + std::to_string(Pstream::myProcNo())),
     rankMeshDisplacementsName_("displacements_MPI_" + std::to_string(Pstream::myProcNo())),
-    boundaryPoints_(), 
+    boundaryPoints_(),
     boundaryDisplacements_()
 {
     writeSolutionDimToDatabase();
     writeMeshPointsToDatabase();
+    writeBoundaryPointsToDatabase();
 }
 
 Foam::displacementSmartSimMotionSolver::
@@ -161,20 +229,21 @@ displacementSmartSimMotionSolver
     clusterMode_(dict.getOrDefault<bool>("clusterMode", true)),
     client_(clusterMode_),
     solutionDim_(
-        std::accumulate( 
-            fvMesh_.solutionD().cbegin(),   
-            fvMesh_.solutionD().cend(),     
-            0                               
+        std::accumulate(
+            fvMesh_.solutionD().cbegin(),
+            fvMesh_.solutionD().cend(),
+            0
         )
     ),
     validCmpts_(filterValidCmpts(fvMesh_.solutionD())),
     rankMeshPointsName_("points_MPI_" + std::to_string(Pstream::myProcNo())),
     rankMeshDisplacementsName_("displacements_MPI_" + std::to_string(Pstream::myProcNo())),
-    boundaryPoints_(), 
+    boundaryPoints_(),
     boundaryDisplacements_()
 {
     writeSolutionDimToDatabase();
     writeMeshPointsToDatabase();
+    writeBoundaryPointsToDatabase();
 }
 
 // * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
@@ -196,20 +265,13 @@ Foam::tmp<Foam::pointField> Foam::displacementSmartSimMotionSolver::curPoints() 
     return tcurPoints;
 }
 
-void Foam::displacementSmartSimMotionSolver::solve() 
+void Foam::displacementSmartSimMotionSolver::solve()
 {
     // The points have moved so before interpolation update
     pointDisplacement_.boundaryFieldRef().evaluate();
 
-    // Assemble and send boundary points and their displacements to SmartRedis 
-
-    // - Agglomerate boundary points and displacements for the MPI rank
-
-    // TODO(TM,AS): move the points0 agglomeration and writing to writeMeshPointsToDatabase  
-    const pointField& points0 = this->points0(); // MOVE
+    const auto& meshBoundary = motionSolver::mesh().boundaryMesh();
     const auto& boundaryDisplacements = pointDisplacement().boundaryField();
-    const auto& meshBoundary = motionSolver::mesh().boundaryMesh(); 
-    List<point> mpiRankPoints; // MOVE 
     List<vector> mpiRankDisplacements;
     forAll(boundaryDisplacements, patchI)
     {
@@ -218,97 +280,75 @@ void Foam::displacementSmartSimMotionSolver::solve()
         {
            continue;
         }
-
         tmp<vectorField> dispPtr = boundaryDisplacements[patchI].patchInternalField();
         const vectorField& disp  = dispPtr();
 
-        const polyPatch& patch   = meshBoundary[patchI]; // MOVE
-        const labelList& patchPointIds = patch.meshPoints();  // MOVE
-
-        forAll(patchPointIds, id)
+        forAll(disp, id)
         {
-            mpiRankPoints.append(points0[patchPointIds[id]]); // MOVE
-            mpiRankDisplacements.append(disp[id]);
+            if (disp[id].size() > 0) mpiRankDisplacements.append(disp[id]);
         }
     }
 
     // - Prepare global displacement and point lists for gather
-    List<List<point>>   globalPointListList(Pstream::nProcs()); // MOVE
     List<List<vector>>  globalDisplacementListList(Pstream::nProcs());
 
-    // - Assign data in the lobal lists list from this MPI rank
-    globalPointListList[Pstream::myProcNo()] = mpiRankPoints; // MOVE
+    // - Assign data in the global lists list from this MPI rank
     globalDisplacementListList[Pstream::myProcNo()] = mpiRankDisplacements;
 
     // - Gather all data from all ranks at the main rank (0)
-    Pstream::gatherList(globalPointListList); // MOVE
     Pstream::gatherList(globalDisplacementListList);
 
     // - Send data to SmartRedis for ML model training from the main rank (0)
-    if (Pstream::myProcNo() == 0) 
+    if (Pstream::myProcNo() == 0)
     {
-        // - Compute the global number of boundary points and displacements. 
-        label nGlobalBoundaryPoints = 0;  // MOVE
-        forAll(globalPointListList, rankI) // MOVE
+        // - Compute the global number of boundary points and displacements.
+
+        label nGlobalBoundaryDisplacements= 0;
+        forAll(globalDisplacementListList, rankI)
         {
-            nGlobalBoundaryPoints += globalPointListList[rankI].size(); // MOVE
+            nGlobalBoundaryDisplacements += globalDisplacementListList[rankI].size();
         }
-        
-        // - Resize agglomerated point and displacement data to equal size. 
-        boundaryPoints_.resize(nGlobalBoundaryPoints * solutionDim_); // MOVE
-        boundaryDisplacements_.resize(nGlobalBoundaryPoints * solutionDim_);
+        boundaryDisplacements_.resize(nGlobalBoundaryDisplacements * solutionDim_);
 
         // - Agglomerate the gathered boundary List<List<vector>> points and
-        // displacements into boundaryPoints_ and boundaryDisplacements_ attributes. 
+        // displacements into boundaryPoints_ and boundaryDisplacements_ attributes.
         label globalCmptI = 0;
-        forAll(globalPointListList, rankI)
+        forAll(globalDisplacementListList, rankI)
         {
-            // Get the list of points from each rank 
-            const List<point>& rankPoints = globalPointListList[rankI]; // MOVE
-            // Get the list of displacements from each rank 
+            // Get the list of displacements from each rank
             const List<point>& rankDisplacements = globalDisplacementListList[rankI];
 
             // Assign rank points and rank displacements to boundaryPoints_ and
-            // boundaryDisplacements_. 
+            // boundaryDisplacements_.
             // meshPoints [1,2,3],[4,5,6]
             // validCmpts [0,2] - xz axis is the solution plane.
-            // globalPoints_ = [1,3,4,6] - viewed as [1,3], [4,6].   
+            // globalPoints_ = [1,3,4,6] - viewed as [1,3], [4,6].
 
             // Iteration step is therefore point * solution dimension for
             // globalPoints_  and globalDisplacements_
-            forAll(rankPoints, pointI)
+            forAll(rankDisplacements, pointI)
             {
                 forAll(validCmpts_, dimI)
                 {
-                    boundaryPoints_[globalCmptI] = rankPoints[pointI][validCmpts_[dimI]]; // MOVE
                     boundaryDisplacements_[globalCmptI] = rankDisplacements[pointI][validCmpts_[dimI]];
                     ++globalCmptI;
                 }
             }
         }
 
-        // Send points to SmartRedis for ML model training.
-        client_.put_tensor( // MOVE
-            "points",
-            boundaryPoints_.data(), 
-            {size_t(nGlobalBoundaryPoints), size_t(solutionDim_)},
-            SRTensorTypeDouble, 
-            SRMemLayoutContiguous
-        );
-
         client_.put_tensor(
             "displacements",
-            boundaryDisplacements_.data(), 
-            {size_t(nGlobalBoundaryPoints), size_t(solutionDim_)},
-            SRTensorTypeDouble, 
+            boundaryDisplacements_.data(),
+            {size_t(nGlobalBoundaryDisplacements), size_t(solutionDim_)},
+            SRTensorTypeDouble,
             SRMemLayoutContiguous
         );
 
         client_.put_tensor(
-            "data_ready", 
-            &solutionDim_, 
+            "data_ready",
+            &solutionDim_,
             {1},
-            SRTensorTypeInt32, 
+            SRTensorTypeInt32,
             SRMemLayoutContiguous
         );
     }
@@ -316,19 +356,19 @@ void Foam::displacementSmartSimMotionSolver::solve()
     // Refresh points_MPI_<rank> with current mesh points.
     // writeMeshPointsToDatabase();  // TODO(TM): can we remove this using points0 displacements?
 
-    bool model_ready = client_.poll_key("model_ready", 1, 10000);
+    bool model_ready = client_.poll_key("model_ready", 1, 100000);
     if (! model_ready)
     {
         FatalErrorInFunction
             << "Displacement model not available in the SmartRedis database."
             << exit(Foam::FatalError);
     }
-    else // Perform forward inference in the database and assign rank-displacements 
+    else // Perform forward inference in the database and assign rank-displacements
     {
         // Perform the forward inference in SmartRedis
         client_.run_model(
-            "model", 
-            {rankMeshPointsName_}, 
+            "model",
+            {rankMeshPointsName_},
             {rankMeshDisplacementsName_}
         );
 
@@ -346,7 +386,7 @@ void Foam::displacementSmartSimMotionSolver::solve()
             {rankMeshDisplacements.size()},
             SRTensorTypeDouble,
             SRMemLayoutContiguous
-        );   
+        );
 
         label globalId = 0;
         pointVectorField newDisplacement("newDisplacement", pointDisplacement_);
@@ -358,24 +398,24 @@ void Foam::displacementSmartSimMotionSolver::solve()
                 ++globalId;
             }
         }
-        //newDisplacement.boundaryFieldRef().evaluate(); 
-        pointDisplacement_.internalFieldRef() = newDisplacement.internalField(); 
-        pointDisplacement_.boundaryFieldRef().evaluate(); 
+        //newDisplacement.boundaryFieldRef().evaluate();
+        pointDisplacement_.internalFieldRef() = newDisplacement.internalField();
+        pointDisplacement_.boundaryFieldRef().evaluate();
     }
 
-    // At the end of the simulation, have MPI rank 0 notify the python 
+    // At the end of the simulation, have MPI rank 0 notify the python
     // client via SmartRedis that the simulation has completed by writing
-    // an end_time_index tensor to SmartRedis. 
+    // an end_time_index tensor to SmartRedis.
     const auto& runTime = fvMesh_.time();
-    if ((Pstream::myProcNo() == 0) &&  
+    if ((Pstream::myProcNo() == 0) &&
         (runTime.timeOutputValue() >= runTime.endTime().value()))
     {
         std::vector<double> end_time_vec {double(runTime.timeIndex())};
         Info << "Seting end time flag : " << end_time_vec[0] << endl;
         client_.put_tensor(
-            "final_iteration", 
-            end_time_vec.data(), 
-            {1}, 
+            "final_iteration",
+            end_time_vec.data(),
+            {1},
             SRTensorTypeDouble, SRMemLayoutContiguous
         );
     }

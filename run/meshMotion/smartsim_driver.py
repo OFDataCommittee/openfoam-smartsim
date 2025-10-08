@@ -8,33 +8,30 @@ from PyFoam.RunDictionary.ParsedParameterFile import ParsedParameterFile
 
 from smartsim import Experiment
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="Run a SmartSim Machine-Learning mesh deformation experiment"
-    )
-    parser.add_argument(
-        "--experiment", "-e",
-        required=True,
-        help="Name of the SmartSim experiment (e.g., mesh_deformation)"
-    )
-    parser.add_argument(
-        "--case", "-c",
-        required=True,
-        help="Name of the OpenFOAM case folder (e.g., ellipsoid3D)"
-    )
-    args = parser.parse_args()
+platform_config = {
+    "local": {
+        "launcher": "local",
+        "interface": "lo"
+    },
+    "hotlum": {
+        "launcher": "slurm",
+        "interface": "bond0"
+    }
+}
+
+def main(args):
 
     # ----------------------------------------------------------------
     # Create the SmartSim experiment
     # ----------------------------------------------------------------
 
-    exp = Experiment(args.experiment, launcher="local")
+    exp = Experiment(args.experiment, launcher=platform_config[args.platform]["launcher"])
 
     # ----------------------------------------------------------------
     # Launch the database
     # ----------------------------------------------------------------
 
-    db = exp.create_database(port=8000, interface="lo")
+    db = exp.create_database(port=8000, interface=platform_config[args.platform]["interface"])
     exp.generate(db, overwrite=True)
     exp.start(db)
     print(f"Database started at: {db.get_address()}")
@@ -55,13 +52,12 @@ def main():
     # ----------------------------------------------------------------
     # Configure and create the OpenFOAM mesh-motion model
     # ----------------------------------------------------------------
-    
-    # Create OpenFOAM moveDynamicMesh run settings 
+
+    # Create OpenFOAM moveDynamicMesh run settings
     openfoam_rs = exp.create_run_settings(
         exe="moveDynamicMesh",
         exe_args="-parallel",
-        run_command="mpirun",
-        run_args={"n": f"{num_mpi_ranks}"}
+        run_command="mpirun"
     )
     openfoam_rs.set_tasks(num_mpi_ranks)
     openfoam_rs.set_nodes(1)
@@ -79,7 +75,7 @@ def main():
 
     training_rs = exp.create_run_settings(
         exe="python",
-        exe_args=f"ml_model_training.py {num_mpi_ranks}"
+        exe_args=f"ml_model_training.py {num_mpi_ranks} {args.radius_power} mlp"
     )
     training_rs.set_tasks(1)
     training_rs.set_nodes(1)
@@ -88,7 +84,9 @@ def main():
         name="ml_model_training",
         run_settings=training_rs
     )
-    ml_model_training.attach_generator_files(to_copy="ml_model_training.py")
+    ml_model_training.attach_generator_files(
+        to_copy=["ml_model_training.py", "networks/MLP.py"]
+    )
 
     exp.generate(ml_model_training, overwrite=True)
 
@@ -111,4 +109,29 @@ def main():
         exp.stop(db)
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(
+        description="Run a SmartSim Machine-Learning mesh deformation experiment"
+    )
+    parser.add_argument(
+        "--experiment", "-e",
+        required=True,
+        help="Name of the SmartSim experiment (e.g., mesh_deformation)"
+    )
+    parser.add_argument(
+        "--case", "-c",
+        required=True,
+        help="Name of the OpenFOAM case folder (e.g., ellipsoid3D)"
+    )
+    parser.add_argument(
+        "--radius_power",
+        default=0,
+        help="Power law associated with the loss function"
+    )
+    parser.add_argument(
+        "--platform",
+        choices=["slurm", "hotlum"],
+        default="local",
+        help="The platform on which this is being run"
+    )
+    args = parser.parse_args()
+    main(args)

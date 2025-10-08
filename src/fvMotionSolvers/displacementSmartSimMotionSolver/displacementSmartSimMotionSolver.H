@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2023 Tomislav Maric, TU Darmstadt 
+    Copyright (C) 2023 Tomislav Maric, TU Darmstadt
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -32,7 +32,7 @@ Group
 Description
 
     Mesh motion solver for an fvMesh. Globally approximates mesh displacement
-    using Machine Learning Models. Coupling with ML is done using SmartSim. 
+    using Machine Learning Models. Coupling with ML is done using SmartSim.
 
 SourceFiles
     displacementSmartSimMotionSolver.C
@@ -66,28 +66,28 @@ class displacementSmartSimMotionSolver
 
         ////- Interpolation used to transfer cell displacement to the points
         //autoPtr<motionInterpolation> interpolationPtr_;
-    
-        //- Set to false if not using a clustered database 
+
+        //- Set to false if not using a clustered database
         bool clusterMode_;
 
         //- SmartRedis Database Client
         SmartRedis::Client client_;
-        
+
         //- Spatial dimension - necessary for CFD+ML dimension consistency.
-        //- OpenFOAM ignores simply components in pseudo 2D cases; NNs cannot 
+        //- OpenFOAM ignores simply components in pseudo 2D cases; NNs cannot
         //  be trained on components whose values are all constant (zeros).
-        const label solutionDim_; 
+        const label solutionDim_;
 
         // - Which vector components correspond to solution dimensions:
         //   fvMesh::solutionD() = [1, 0, 1] -> solutionComponents_ = [0, 2]
-        const labelList validCmpts_; 
+        const labelList validCmpts_;
 
-        // - SmartRedis tensor names for ML inference for each MPI rank. 
+        // - SmartRedis tensor names for ML inference for each MPI rank.
         const word rankMeshPointsName_;
         const word rankMeshDisplacementsName_;
-        
-        // - Flattened boundary points sent to SmartRedis for ML 
-        std::vector<double> boundaryPoints_; 
+
+        // - Flattened boundary points sent to SmartRedis for ML
+        std::vector<double> boundaryPoints_;
 
         // - Flattened boundary displacements sent to SmartRedis for ML
         std::vector<double> boundaryDisplacements_;
@@ -103,8 +103,9 @@ class displacementSmartSimMotionSolver
 
         static labelList filterValidCmpts(const Vector<label>& solutionDim);
 
-        void writeSolutionDimToDatabase(); 
-        void writeMeshPointsToDatabase(); 
+        void writeSolutionDimToDatabase();
+        void writeMeshPointsToDatabase();
+        void writeBoundaryPointsToDatabase();
 
 public:
 
@@ -140,7 +141,7 @@ public:
     virtual tmp<pointField> curPoints() const;
 
     //- Solve for motion
-    virtual void solve(); 
+    virtual void solve();
 
 };
 
