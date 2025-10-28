@@ -9,22 +9,48 @@ from sklearn.model_selection import train_test_split
 import torch.optim as optim 
 import matplotlib
 matplotlib.use('Agg')
-import matplotlib.pyplot as plt
+# from adam_lbfgs import Adam_LBFGS
+from torch.optim import Adam, LBFGS, Optimizer
 
-from sklearn.metrics import mean_squared_error
-
-def annealing_weight(epoch, T_start, T_end, sharpness=3):
+def annealing_weight(epoch, T_start, T_end, sharpness=10):
 
     if epoch < T_start:
         return 0.0
     elif epoch > T_end:
         return 1.0
     else:
-        # set range [0,1]
+        # 标准化到 [0,1]
         x = (epoch - T_start) / (T_end - T_start)
-
-        return float(1 / (1 + np.exp(-sharpness * (x - 0.5)) * 100))
+        # S 型函数，中心点在 0.5
+        return float(x)/10
     
+class Adam_LBFGS(Optimizer):
+    def __init__(self, params, switch_epochs, adam_params, lbfgs_params):
+        # defaults = dict(switch_epoch=switch_epoch, adam_params=adam_params, lbfgs_params=lbfgs_params)
+
+        self.switch_epochs = sorted(switch_epochs)
+        self.params = list(params)
+        self.adam = Adam(self.params, **adam_params)
+        self.lbfgs_params = lbfgs_params
+        # self.lbfgs = LBFGS(self.params, **lbfgs_params)
+
+        super(Adam_LBFGS, self).__init__(self.params, defaults={})
+
+        self.state['epoch'] = 0
+    def reset_epoch(self):
+        self.state['epoch'] = 0
+
+    def step(self, closure=None):
+        if self.state['epoch'] < self.switch_epochs[0]:
+            self.adam.step(closure)
+        else:
+            # (Re)start LBFGS optimizer
+            if self.state['epoch'] in self.switch_epochs:
+                print(f'Starting LBFGS optimizer at epoch {self.state["epoch"]}')
+                self.lbfgs = LBFGS(self.params, **self.lbfgs_params)
+            self.lbfgs.step(closure)
+        self.state['epoch'] += 1
+
 class EarlyStopping:
     """Early stopping with absolute threshold and patience-based logic."""
 
@@ -33,7 +59,6 @@ class EarlyStopping:
         patience: int = 40,
         min_delta: float = 1.0e-4,
         model: Union[nn.Module, None] = None,
-        max_epochs: int = 10000
     ):
         self._patience = patience
         self._min_delta = min_delta
@@ -43,29 +68,19 @@ class EarlyStopping:
         self._stop = False
         self._model_buffer = None
         self._model_script = None
-        self._epoch = 0,
-        self._best_loss_epoch = 0
-        self._max_epochs = max_epochs
-        self._T_start = 0
 
-    def __call__(self, loss: float, epoch) -> bool:
+    def __call__(self, loss: float) -> bool:
         """Check if training should stop."""
-        self._epoch = epoch
-        if self._epoch >= self._max_epochs:
-            self._stop = True
-            print(f"epoch: {self._epoch} reached max epochs.")
-        if self._epoch >= self._T_start:
-            if loss < self._best_loss * (1.0 - self._min_delta):
-                self._best_loss = loss
-                self._counter = 0
-                self._best_loss_epoch = self._epoch
-                if self._model is not None:
-                    self._save_model()     
-            else:
-                self._counter += 1
-                if self._counter > self._patience:
-                    self._stop = True
-
+        if loss < self._best_loss * (1.0 - self._min_delta):
+            self._best_loss = loss
+            self._counter = 0
+            if self._model is not None:
+                self.save_model()
+                
+        else:
+            self._counter += 1
+            if self._counter >= self._patience:
+                self._stop = True
         return self._stop
     def reset(self):
         """Reset the early stopping state."""
@@ -73,9 +88,8 @@ class EarlyStopping:
         self._best_loss = float("inf")
         self._counter = 0
         self._stop = False
-        self._epoch = 0
 
-    def _save_model(self):
+    def save_model(self):
         self._model.eval()
         with io.BytesIO() as buffer:
             
@@ -146,7 +160,7 @@ def pinn_loss(points, displ_pred):
     grad_u_y = torch.autograd.grad(u_y, points, grad_outputs=ones, create_graph=True, retain_graph=True)[0]
     duy_dx = grad_u_y[:, 0:1]
     duy_dy = grad_u_y[:, 1:2]
-    # 计算应变
+    # calculate strain components
     eps_xx = dux_dx
     eps_yy = duy_dy
     eps_xy = 0.5 * (dux_dy + duy_dx)
@@ -167,26 +181,23 @@ def train(num_mpi_ranks):
     model = MLP(num_layers=3, layer_width=50, input_size=2, output_size=2, activation_fn=torch.nn.Tanh()).to(device)
     
     # Initialize the optimizer
-    learning_rate = 1e-04
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+    switch_epochs = [100]  # 第 100 个 epoch 开始用 LBFGS
+    adam_params = {'lr': 1e-3}
+    lbfgs_params = {'lr': 1, 'max_iter': 20, 'history_size': 10}
+    optimizer = Adam_LBFGS(model.parameters(), switch_epochs, adam_params, lbfgs_params)
     
     # # L-BFGS optimizer (currently active)
     # optimizer = optim.LBFGS(model.parameters(), lr=1.0, max_iter=20, tolerance_grad=1e-7, tolerance_change=1e-9, history_size=100)
 
-    epochs = 2000
-     # Annealing schedule parameters
-    T_start = 0
-    T_end = 0.5 * epochs
-
     early_stopper = EarlyStopping(
         patience=100,
-        min_delta=1e-3,
-        model=model,
-        max_epochs=epochs
+        min_delta=1e-2,
+        model=model
     )
     # Make sure all datasets are avaialble in the smartredis database.
     local_time_index = 1
     while True:    
+        
         print (f"Time step {local_time_index}")
         # Fetch datasets from SmartRedis
     
@@ -258,36 +269,44 @@ def train(num_mpi_ranks):
         loss_func = nn.MSELoss()
       
         model.train()
+        if local_time_index == 1:
+            epochs = 10000
+        else:
+            epochs = 1000
         n_epochs = 0
         rmse_loss_val = 1
-
+        optimizer.reset_epoch()
+        T_start = 0.1 * epochs
+        T_end = 0.5 * epochs
         for epoch in range(epochs):    
-            # Zero the gradients
-            optimizer.zero_grad()
-    
-            # Forward pass on the training data
-            displ_pred = model(points_train)
-    
-            # Compute loss on the training data with annealed weight
-            data_loss = loss_func(displ_pred, displ_train)
-            p_loss = pinn_loss(points_train, displ_pred)
+            def closure(epoch=epoch):
+                optimizer.zero_grad()
+                # Forward pass
+                displ_pred = model(points_train)
+                
+                # Compute losses
+                data_loss = loss_func(displ_pred, displ_train)
+
+                p_loss = pinn_loss(points_train, displ_pred)
+                
+                # Physics weight annealing
+                physics_weight = annealing_weight(epoch, T_start, T_end, sharpness=10)
+
+                data_weight = 1.0
+                
+                loss_train = data_weight * data_loss + physics_weight * p_loss
+                if epoch % 50 == 0 or epoch == epochs - 1:
+                    print(
+                        f"[Epoch {epoch}/{epochs}] "
+                        f"total loss: {loss_train.item()}, "
+                        f"data loss: {data_loss.item()}, "
+                        f"physics loss: {p_loss.item()}, "
+                        f"physics_weight: {physics_weight}"
+                    )
+                loss_train.backward()
+                return loss_train
             
-            # Annealed weight: start with high physics weight, gradually decrease
-            # Physics weight increase from 0.01 to 0.1 over training
-            physics_weight = annealing_weight(epoch, T_start, T_end, sharpness=10)
-            data_weight = 1.0
-            
-            loss_train = data_weight * data_loss + physics_weight * p_loss
-            if epoch % 50 == 0 or epoch == epochs - 1:
-                print(
-                    f"[Epoch {epoch}/{epochs}] "
-                    f"data loss: {data_loss.item()}, "
-                    f"physics loss: {p_loss.item()}, "
-                    f"physics_weight: {physics_weight}"
-                )
-            # Backward pass and optimization
-            loss_train.backward()
-            optimizer.step()
+            optimizer.step(closure)
 
             n_epochs = n_epochs + 1
             # Forward pass on the validation data, with torch.no_grad() for efficiency
@@ -295,9 +314,11 @@ def train(num_mpi_ranks):
                 displ_pred_val = model(points_val)
                 mse_loss_val = loss_func(displ_pred_val, displ_val)
                 rmse_loss_val = torch.sqrt(mse_loss_val)
-                if early_stopper(rmse_loss_val.item(), epoch):
+                if epoch % 50 == 0 or epoch == epochs - 1:
+                    print(f"[Epoch {epoch}] Validation RMSE: {rmse_loss_val:.6e}")
+                if early_stopper(rmse_loss_val.item()):
                     print(f"Training stopped at epoch {epoch}")
-                    print (f"RMSE {early_stopper._best_loss}, the epochs of smallest loss: {early_stopper._best_loss_epoch}")
+                    print (f"RMSE {early_stopper._best_loss}, number of epochs {n_epochs}")
                     early_stopper.reset()
                     break
 

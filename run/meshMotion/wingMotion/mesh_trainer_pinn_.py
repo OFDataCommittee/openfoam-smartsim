@@ -9,22 +9,7 @@ from sklearn.model_selection import train_test_split
 import torch.optim as optim 
 import matplotlib
 matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 
-from sklearn.metrics import mean_squared_error
-
-def annealing_weight(epoch, T_start, T_end, sharpness=3):
-
-    if epoch < T_start:
-        return 0.0
-    elif epoch > T_end:
-        return 1.0
-    else:
-        # set range [0,1]
-        x = (epoch - T_start) / (T_end - T_start)
-
-        return float(1 / (1 + np.exp(-sharpness * (x - 0.5)) * 100))
-    
 class EarlyStopping:
     """Early stopping with absolute threshold and patience-based logic."""
 
@@ -46,7 +31,7 @@ class EarlyStopping:
         self._epoch = 0,
         self._best_loss_epoch = 0
         self._max_epochs = max_epochs
-        self._T_start = 0
+        self._T_start = 0  # epochs to start checking for early stopping
 
     def __call__(self, loss: float, epoch) -> bool:
         """Check if training should stop."""
@@ -172,21 +157,18 @@ def train(num_mpi_ranks):
     
     # # L-BFGS optimizer (currently active)
     # optimizer = optim.LBFGS(model.parameters(), lr=1.0, max_iter=20, tolerance_grad=1e-7, tolerance_change=1e-9, history_size=100)
-
-    epochs = 2000
-     # Annealing schedule parameters
-    T_start = 0
-    T_end = 0.5 * epochs
-
+    epochs = 5000   
     early_stopper = EarlyStopping(
-        patience=100,
+        patience=50,
         min_delta=1e-3,
         model=model,
         max_epochs=epochs
     )
     # Make sure all datasets are avaialble in the smartredis database.
     local_time_index = 1
+
     while True:    
+        
         print (f"Time step {local_time_index}")
         # Fetch datasets from SmartRedis
     
@@ -260,7 +242,7 @@ def train(num_mpi_ranks):
         model.train()
         n_epochs = 0
         rmse_loss_val = 1
-
+        epochs = early_stopper._max_epochs
         for epoch in range(epochs):    
             # Zero the gradients
             optimizer.zero_grad()
@@ -274,7 +256,7 @@ def train(num_mpi_ranks):
             
             # Annealed weight: start with high physics weight, gradually decrease
             # Physics weight increase from 0.01 to 0.1 over training
-            physics_weight = annealing_weight(epoch, T_start, T_end, sharpness=10)
+            physics_weight = max(0.0001, 0.001 * epoch / epochs + 0.0001)
             data_weight = 1.0
             
             loss_train = data_weight * data_loss + physics_weight * p_loss
@@ -295,7 +277,7 @@ def train(num_mpi_ranks):
                 displ_pred_val = model(points_val)
                 mse_loss_val = loss_func(displ_pred_val, displ_val)
                 rmse_loss_val = torch.sqrt(mse_loss_val)
-                if early_stopper(rmse_loss_val.item(), epoch):
+                if early_stopper(rmse_loss_val.item(), n_epochs):
                     print(f"Training stopped at epoch {epoch}")
                     print (f"RMSE {early_stopper._best_loss}, the epochs of smallest loss: {early_stopper._best_loss_epoch}")
                     early_stopper.reset()
