@@ -44,5 +44,32 @@ timePrecision   6;
 
 runTimeModifiable true;
 
+functions
+{
+    surfaceDistance1
+    {
+        type            surfaceDistance;
+        libs            (fieldFunctionObjects);
 
+        geometry
+        {
+            wing_5degrees.obj.gz
+            {
+                type triSurfaceMesh;
+                name wing;
+            }
+        }
+
+        calculateCells  true;
+        region          region0;     // 区域名
+        enabled         true;
+        log             true;
+        timeStart       0;
+        timeEnd         100;
+        executeControl  timeStep;
+        executeInterval 1;
+        writeControl    timeStep;
+        writeInterval   1;
+    }
+}
 // ************************************************************************* //

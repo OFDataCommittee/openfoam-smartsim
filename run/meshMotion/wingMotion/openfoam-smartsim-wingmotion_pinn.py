@@ -11,6 +11,7 @@ import sys
 
 from smartsim import Experiment
 import time
+from pathlib import Path
 
 # SLURM CLUSTER
 # exp = Experiment("mesh-motion", launcher="slurm") 
@@ -35,6 +36,10 @@ num_mpi_ranks = 4
 # SLURM CLUSTER
 # of_rs = exp.create_run_settings(exe="pimpleFoam", exe_args="-parallel")
 # LOCAL RUN
+
+
+project_root = Path(__file__).parent.resolve()
+
 of_rs = exp.create_run_settings(exe="pimpleFoam", exe_args="-parallel", 
                                 run_command="mpirun", 
                                 run_args={"n": f"{num_mpi_ranks}"})

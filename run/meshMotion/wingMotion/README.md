@@ -25,7 +25,7 @@ which creates `mesh-motion_MachineLearning`, which has sub-folders for the Smart
 Both `Allrun.LaplaceMeshMotion` and `Allrun.MachineLearningMeshMotion` will compute mesh quality metrics (most important ones are non-orthogonality and skewness), and `.foam` files that ParaView needs to recognize OpenFOAM folders. A paraview state file is prepared that compares the decrease in non-orthogonality, visualizing the difference between Laplace non-orthogonality and MLP non-orthogonality, run it as
 
 ```
-wingMotion> paraview --state=visualize-non-orth-difference.pvsm
+wingMotion> paraview --state=diff.pvsm
 ```
 
 This will show how the Laplace causes an increase of non-orthogonality at the worst possible place - next to the airfoil. The increase is up to 35 degrees, w.r.t a simple MLP. 

@@ -23,7 +23,7 @@ def annealing_weight(epoch, T_start, T_end, sharpness=3):
         # set range [0,1]
         x = (epoch - T_start) / (T_end - T_start)
 
-        return float(1 / (1 + np.exp(-sharpness * (x - 0.5)) * 100))
+        return float(1 / (1 + np.exp(-sharpness * (x - 0.5)) * 50))
     
 class EarlyStopping:
     """Early stopping with absolute threshold and patience-based logic."""
@@ -172,10 +172,12 @@ def train(num_mpi_ranks):
     
     # # L-BFGS optimizer (currently active)
     # optimizer = optim.LBFGS(model.parameters(), lr=1.0, max_iter=20, tolerance_grad=1e-7, tolerance_change=1e-9, history_size=100)
-
-    epochs = 2000
+    if local_time_index == 1:
+        epochs = 10000
+    else:
+        epochs = 1000
      # Annealing schedule parameters
-    T_start = 0
+    T_start = 0.1 * epochs
     T_end = 0.5 * epochs
 
     early_stopper = EarlyStopping(
