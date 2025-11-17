@@ -1,0 +1,40 @@
+#!/bin/sh
+cd "${0%/*}" || exit                                # Run from this directory
+. ${WM_PROJECT_DIR:?}/bin/tools/RunFunctions        # Tutorial run functions
+#------------------------------------------------------------------------------
+
+./Allclean
+
+./Allrun.pre
+
+echo Delete previous results mesh-motion_Pinn
+rm -rf mesh-motion_Pinn
+
+echo Use the constant/dynamicMesh.laplace settings and run the solver locally
+(
+    cd wingMotion2D_pimpleFoam || exit
+    
+    echo Set mesh motion settings to Pinn mesh motion
+    cp constant/dynamicMeshDict.PinnMeshMotion constant/dynamicMeshDict
+
+    cd ..
+
+    echo Run the SmartSim python script that implements the Pinn+CFD algorithm
+    python openfoam-smartsim-wingmotion_pinn.py 
+
+    echo Copy data for comparison
+    cp -r mesh-motion mesh-motion_Pinn
+
+    echo Reset mesh motion settings 
+    git checkout wingMotion2D_pimpleFoam/constant/dynamicMeshDict 
+
+    echo Create .foam file for visualization in ParaView 
+    touch mesh-motion_Pinn/of_model/pinn.foam
+
+    echo Generating mesh quality metrics
+    mpirun -np 4 checkMesh \
+	    -case mesh-motion_Pinn/of_model \
+	    -writeFields '(nonOrthoAngle skewness)' -parallel
+)
+
+#------------------------------------------------------------------------------

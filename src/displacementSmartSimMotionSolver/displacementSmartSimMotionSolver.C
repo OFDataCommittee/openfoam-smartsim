@@ -184,7 +184,7 @@ void Foam::displacementSmartSimMotionSolver::solve()
     client_.append_to_list("pointsDatasetList", pointsDataset);
     client_.append_to_list("displacementsDatasetList", displacementsDataset);
 
-    bool model_updated = client_.poll_key("model_updated", 10, 10000);
+    bool model_updated = client_.poll_key("model_updated", 100, 1000000);
     if (! model_updated)
     {
         FatalErrorInFunction
