@@ -1,0 +1,133 @@
+{
+  "schema info": {
+    "schema_name": "entity manifest",
+    "version": "0.0.4"
+  },
+  "experiment": {
+    "name": "mesh-motion",
+    "path": "/home/jin/OpenFOAM/openfoam-smartsim/run/meshMotion/wingMotion/mesh-motion",
+    "launcher": "Local",
+    "out_file": "/home/jin/OpenFOAM/openfoam-smartsim/run/meshMotion/wingMotion/mesh-motion/.smartsim/telemetry/logs/smartsim.out",
+    "err_file": "/home/jin/OpenFOAM/openfoam-smartsim/run/meshMotion/wingMotion/mesh-motion/.smartsim/telemetry/logs/smartsim.err"
+  },
+  "runs": [
+    {
+      "run_id": "ad89aaa",
+      "timestamp": 1763056320332703324,
+      "model": [],
+      "orchestrator": [
+        {
+          "name": "orchestrator",
+          "type": "redis",
+          "interface": [
+            "lo"
+          ],
+          "shards": [
+            {
+              "name": "orchestrator_0",
+              "hostname": "127.0.0.1",
+              "port": 8000,
+              "cluster": false,
+              "conf_file": null,
+              "out_file": "/home/jin/OpenFOAM/openfoam-smartsim/run/meshMotion/wingMotion/mesh-motion/.smartsim/telemetry/mesh-motion/ad89aaa/database/orchestrator/orchestrator_0/orchestrator_0.out",
+              "err_file": "/home/jin/OpenFOAM/openfoam-smartsim/run/meshMotion/wingMotion/mesh-motion/.smartsim/telemetry/mesh-motion/ad89aaa/database/orchestrator/orchestrator_0/orchestrator_0.err",
+              "memory_file": "",
+              "client_file": "",
+              "client_count_file": "",
+              "telemetry_metadata": {
+                "status_dir": "/home/jin/OpenFOAM/openfoam-smartsim/run/meshMotion/wingMotion/mesh-motion/.smartsim/telemetry/mesh-motion/ad89aaa/database/orchestrator/orchestrator_0",
+                "step_id": null,
+                "task_id": "28276",
+                "managed": false
+              }
+            }
+          ]
+        }
+      ],
+      "ensemble": []
+    },
+    {
+      "run_id": "5774451",
+      "timestamp": 1763056320573229347,
+      "model": [
+        {
+          "name": "of_model",
+          "path": "/home/jin/OpenFOAM/openfoam-smartsim/run/meshMotion/wingMotion/mesh-motion/of_model",
+          "exe_args": [
+            "-parallel"
+          ],
+          "run_settings": {
+            "exe": [
+              "/home/jin/OpenFOAM/OpenFOAM-v2412/platforms/linux64GccDPInt32Opt/bin/pimpleFoam"
+            ],
+            "run_command": "/usr/bin/mpirun",
+            "run_args": {
+              "n": 4
+            }
+          },
+          "batch_settings": {},
+          "params": {},
+          "files": {
+            "Symlink": [],
+            "Configure": [],
+            "Copy": [
+              "/home/jin/OpenFOAM/openfoam-smartsim/run/meshMotion/wingMotion/wingMotion2D_pimpleFoam"
+            ]
+          },
+          "colocated_db": {},
+          "telemetry_metadata": {
+            "status_dir": "/home/jin/OpenFOAM/openfoam-smartsim/run/meshMotion/wingMotion/mesh-motion/.smartsim/telemetry/mesh-motion/5774451/model/of_model",
+            "step_id": null,
+            "task_id": "28462",
+            "managed": false
+          },
+          "out_file": "/home/jin/OpenFOAM/openfoam-smartsim/run/meshMotion/wingMotion/mesh-motion/.smartsim/telemetry/mesh-motion/5774451/model/of_model/of_model.out",
+          "err_file": "/home/jin/OpenFOAM/openfoam-smartsim/run/meshMotion/wingMotion/mesh-motion/.smartsim/telemetry/mesh-motion/5774451/model/of_model/of_model.err"
+        }
+      ],
+      "orchestrator": [],
+      "ensemble": []
+    },
+    {
+      "run_id": "2ab04b6",
+      "timestamp": 1763056320777003702,
+      "model": [
+        {
+          "name": "training_app",
+          "path": "/home/jin/OpenFOAM/openfoam-smartsim/run/meshMotion/wingMotion/mesh-motion/training_app",
+          "exe_args": [
+            "mesh_trainer.py",
+            "4"
+          ],
+          "run_settings": {
+            "exe": [
+              "/home/jin/miniconda3/envs/customMLP/bin/python"
+            ],
+            "run_command": null,
+            "run_args": {}
+          },
+          "batch_settings": {},
+          "params": {},
+          "files": {
+            "Symlink": [],
+            "Configure": [],
+            "Copy": [
+              "/home/jin/OpenFOAM/openfoam-smartsim/run/meshMotion/wingMotion/mesh_trainer.py"
+            ]
+          },
+          "colocated_db": {},
+          "telemetry_metadata": {
+            "status_dir": "/home/jin/OpenFOAM/openfoam-smartsim/run/meshMotion/wingMotion/mesh-motion/.smartsim/telemetry/mesh-motion/2ab04b6/model/training_app",
+            "step_id": null,
+            "task_id": "28494",
+            "managed": false
+          },
+          "out_file": "/home/jin/OpenFOAM/openfoam-smartsim/run/meshMotion/wingMotion/mesh-motion/.smartsim/telemetry/mesh-motion/2ab04b6/model/training_app/training_app.out",
+          "err_file": "/home/jin/OpenFOAM/openfoam-smartsim/run/meshMotion/wingMotion/mesh-motion/.smartsim/telemetry/mesh-motion/2ab04b6/model/training_app/training_app.err"
+        }
+      ],
+      "orchestrator": [],
+      "ensemble": []
+    }
+  ]
+}

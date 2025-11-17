@@ -1,13 +1,71 @@
 import argparse
 from smartredis import Client
-import torch
+import torch as torch
 import torch.nn as nn
 import numpy as np
 import io
+from typing import Union
 from sklearn.model_selection import train_test_split
 import torch.optim as optim 
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 from sklearn.metrics import mean_squared_error
+class EarlyStopping:
+    """Early stopping with absolute threshold and patience-based logic."""
+
+    def __init__(
+        self,
+        patience: int = 40,
+        min_delta: float = 1.0e-4,
+        model: Union[nn.Module, None] = None,
+    ):
+        self._patience = patience
+        self._min_delta = min_delta
+        self._model = model
+        self._best_loss = float("inf")
+        self._counter = 0
+        self._stop = False
+        self._model_buffer = None
+        self._model_script = None
+
+    def __call__(self, loss: float) -> bool:
+        """Check if training should stop."""
+        if loss < self._best_loss * (1.0 - self._min_delta):
+            self._best_loss = loss
+            self._counter = 0
+            if self._model is not None:
+                self.save_model()
+                
+        else:
+            self._counter += 1
+            if self._counter >= self._patience:
+                self._stop = True
+        return self._stop
+    def reset(self):
+        """Reset the early stopping state."""
+        self._model.train()
+        self._best_loss = float("inf")
+        self._counter = 0
+        self._stop = False
+
+    def save_model(self):
+        self._model.eval()
+        with io.BytesIO() as buffer:
+            
+            if self._model_buffer:
+                self._model_buffer = None
+
+            # save the model in the buffer
+            example_forward_input = torch.rand(2).to(device)
+
+            # Convert the PyTorch model to TorchScript
+            if self._model_script is None:
+                self._model_script = torch.jit.trace(self._model, example_forward_input)
+            torch.jit.save(self._model_script, buffer)
+            self._model_buffer = buffer.getvalue()
+
 class MLP(nn.Module):
     def __init__(self, num_layers, layer_width, input_size, output_size, activation_fn):
         super(MLP, self).__init__()
@@ -39,36 +97,45 @@ def sort_tensors_by_names(tensors, tensor_names):
 
     return tensors_sorted, tensor_names_sorted
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 def train(num_mpi_ranks):
     client = Client()
     torch.set_default_dtype(torch.float64)
     
     # Initialize the model
-    model = MLP(num_layers=3, layer_width=50, input_size=2, output_size=2, activation_fn=torch.nn.ReLU())
-
+    model = MLP(num_layers=3, layer_width=50, input_size=2, output_size=2, activation_fn=torch.nn.Tanh()).to(device)
+    
     # Initialize the optimizer
     learning_rate = 1e-03
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     
+    # # L-BFGS optimizer (currently active)
+    # optimizer = optim.LBFGS(model.parameters(), lr=1.0, max_iter=20, tolerance_grad=1e-7, tolerance_change=1e-9, history_size=100)
+
+    early_stopper = EarlyStopping(
+        patience=100,
+        min_delta=1e-2,
+        model=model
+    )
     # Make sure all datasets are avaialble in the smartredis database.
     local_time_index = 1
-    while True:
-    
+    while True:    
+        
         print (f"Time step {local_time_index}")
-          
         # Fetch datasets from SmartRedis
     
         # - Poll until the points datasets are written by OpenFOAM
         # print (f"dataset_list_length {dataset_list_length}") # Debug info
         points_updated = client.poll_list_length("pointsDatasetList", 
-                                                 num_mpi_ranks, 10, 1000);
+                                                 num_mpi_ranks, 10, 5000)
         if (not points_updated):
             raise ValueError("Points dataset list not updated.")
             
         # - Poll until the displacements datasets are written by OpenFOAM
         # print (f"dataset_list_length {dataset_list_length}") # Debug info
         displacements_updated = client.poll_list_length("displacementsDatasetList", 
-                                                         num_mpi_ranks, 10, 1000);
+                                                         num_mpi_ranks, 10, 5000)
         if (not displacements_updated):
             raise ValueError("Displacements dataset list not updated.")
             
@@ -116,16 +183,20 @@ def train(num_mpi_ranks):
         # Split training and validation data
         points_train, points_val, displ_train, displ_val = train_test_split(points, displacements, 
                                                                             test_size=0.2, random_state=42)
+        
+        points_train = points_train.clone().detach().to(device).requires_grad_(True) 
+        displ_train = displ_train.to(device)
+        points_val = points_val.to(device)
+        displ_val = displ_val.to(device)
     
         # PYTORCH Training Loop
         loss_func = nn.MSELoss()
       
-        mean_mag_displ = torch.mean(torch.norm(displ_train, dim=1))
-        validation_rmse = []
         model.train()
         epochs = 100000
         n_epochs = 0
         rmse_loss_val = 1
+        
         for epoch in range(epochs):    
             # Zero the gradients
             optimizer.zero_grad()
@@ -133,12 +204,41 @@ def train(num_mpi_ranks):
             # Forward pass on the training data
             displ_pred = model(points_train)
     
-            # Compute loss on the training data
-            loss_train = loss_func(displ_pred, displ_train)
-    
+            # Compute loss on the training data with annealed weight
+            data_loss = loss_func(displ_pred, displ_train)
+
+            if epoch % 50 == 0 or epoch == epochs - 1:
+                print(
+                    f"[Epoch {epoch}/{epochs}] "
+                    f"data loss: {data_loss.item()}, "
+                )
             # Backward pass and optimization
-            loss_train.backward()
+            data_loss.backward()
             optimizer.step()
+
+        # for epoch in range(epochs):
+        #     # Define closure function for L-BFGS
+        #     def closure():
+        #         optimizer.zero_grad()
+                
+        #         # Forward pass on the training data
+        #         displ_pred = model(points_train)
+        
+        #         # Compute loss on the training data with annealed weight
+        #         data_loss = loss_func(displ_pred, displ_train)
+        #         p_loss = pinn_loss(points_train, displ_pred)
+                
+        #         # Annealed weight: start with high physics weight, gradually decrease
+        #         # Physics weight decreases from 1.0 to 0.01 over training
+        #         physics_weight = max(0.01, 1.0 * (1.0 - epoch / epochs))
+        #         data_weight = 1.0
+                
+        #         loss_train = data_weight * data_loss + physics_weight * p_loss
+        #         loss_train.backward()
+        #         return loss_train
+            
+        #     # L-BFGS optimization step
+        #     optimizer.step(closure)
 
             n_epochs = n_epochs + 1
             # Forward pass on the validation data, with torch.no_grad() for efficiency
@@ -146,30 +246,14 @@ def train(num_mpi_ranks):
                 displ_pred_val = model(points_val)
                 mse_loss_val = loss_func(displ_pred_val, displ_val)
                 rmse_loss_val = torch.sqrt(mse_loss_val)
-                validation_rmse.append(rmse_loss_val)
-                if (rmse_loss_val < 1e-04):
+                if early_stopper(rmse_loss_val.item()):
+                    print(f"Training stopped at epoch {epoch}")
+                    print (f"RMSE {early_stopper._best_loss}, number of epochs {n_epochs}")
+                    early_stopper.reset()
                     break
-    
-        print (f"RMSE {validation_rmse[-1]}, number of epochs {n_epochs}")
-        # Uncomment to visualize validation RMSE
-        # plt.loglog()
-        # plt.title("Validation loss RMSE")
-        # plt.xlabel("Epochs")
-        # plt.plot(validation_rmse)
-        # plt.show()
-    
+
         # Store the model into SmartRedis
-        model.eval() # TEST
-        # Prepare a sample input
-        example_forward_input = torch.rand(2)
-        # Convert the PyTorch model to TorchScript
-        model_script = torch.jit.trace(model, example_forward_input)
-        # Save the TorchScript model to a buffer
-        model_buffer = io.BytesIO()
-        torch.jit.save(model_script, model_buffer)
-        # Set the model in the SmartRedis database
-        print("Saving model MLP")
-        client.set_model("MLP", model_buffer.getvalue(), "TORCH", "CPU")
+        client.set_model("MLP", early_stopper._model_buffer, "TORCH", "CPU")
     
         # Update the model in smartredis
         client.put_tensor("model_updated", np.array([0.]))
@@ -177,10 +261,9 @@ def train(num_mpi_ranks):
         # Delete dataset lists for the next time step
         client.delete_list("pointsDatasetList")
         client.delete_list("displacementsDatasetList")
-    
+
         # Update time index
         local_time_index = local_time_index + 1
-    
         if client.poll_key("end_time_index", 10, 10):
             print ("End time reached.")
             break
